@@ -1,18 +1,30 @@
 export type Person = {
+    /** The unique, nonnegative id of the person. */
     id: number;
+    /** The first name of the person. */
     nameFirst: string;
+    /** The last name the person currently has, or had last. Empty signifies unknown. */
     nameLast: string;
+    /** The last name the person received at birth. Empty signifies unknown or no surname change. */
     nameLastMaiden: string;
+    /** The date of birth, as a YYYY[-MM[-DD]] string. Empty signifies unknown. */
     dateBirth: string;
+    /** The date the person died, as a YYYY[-MM[-DD]] string. Empty signifies unknown or still alive. */
     dateDeath: string;
 };
 
 export type Family = {
+    /** The unique, nonnegative id of the family. */
     id: number;
+    /** The husband's id. Null signifies unknown. */
     husband: number | null;
+    /** The wife's id. Null signifies unknown. */
     wife: number | null;
+    /** The ids of the children. Unknown children should not be included. */
     children: number[];
+    /** The last name inherited by the children. Empty signifies to primarily take the husband's last name, secondly the wife's. */
     nameLastOverride: string;
+    /** The date the parent's relation (marriage or similar) started, as a YYYY[-MM[-DD]] string. */
     dateStart: string;
 };
 
@@ -49,6 +61,10 @@ export function FindPeople(s: Slackt, personIds: number[]) {
 
 export function GetPerson(s: Slackt, personId: number) {
     return s.people.find((p) => p.id === personId);
+}
+
+export function GetFamilyFromChild(s: Slackt, personId: number) {
+    return s.families.find((f) => f.children.includes(personId))
 }
 
 export function FormatName(
