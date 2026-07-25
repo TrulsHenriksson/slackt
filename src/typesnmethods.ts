@@ -107,10 +107,10 @@ export function FindDirectRelatives(s: Slackt, personId: number) {
 }
 
 export function FormatFamily(s: Slackt, f: Family) {
-    let husband = f.husband ? FindPerson(s, f.husband) : null;
-    let husbandName = husband ? FormatName(husband) : null;
-    let wife = f.wife ? FindPerson(s, f.wife) : null;
-    let wifeName = wife ? FormatName(wife) : null;
+    let husband = f.husband !== null ? FindPerson(s, f.husband) : null;
+    let husbandName = husband !== null ? FormatName(husband) : null;
+    let wife = f.wife !== null ? FindPerson(s, f.wife) : null;
+    let wifeName = wife !== null ? FormatName(wife) : null;
     let children = f.children.map((c) => FormatName(FindPerson(s, c)));
 
     return `#${f.id} (${f.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${children.length > 0 ? ' = ' + children.join(', ') : ''}`;
