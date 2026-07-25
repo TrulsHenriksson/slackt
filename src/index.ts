@@ -298,7 +298,7 @@ const refreshFamilyInspector = () => {
 
     let husbandEl = document.createElement('p');
     husbandEl.classList.add('grow');
-    husbandEl.innerHTML = family.husband
+    husbandEl.innerHTML = family.husband !== null
         ? FormatName(FindPerson(openedFile, family.husband), 'full')
         : '?';
     husbandContainer.append(husbandEl);
@@ -336,7 +336,7 @@ const refreshFamilyInspector = () => {
 
     let wifeEl = document.createElement('p');
     wifeEl.classList.add('grow');
-    wifeEl.innerHTML = family.wife
+    wifeEl.innerHTML = family.wife !== null
         ? FormatName(FindPerson(openedFile, family.wife), 'full')
         : '?';
     wifeContainer.append(wifeEl);
