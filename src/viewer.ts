@@ -3,10 +3,7 @@ import {
     open,
     download,
     clear,
-    FormatFamily,
     Person,
-    FindPerson,
-    FormatName,
 } from './typesnmethods.js';
 
 function refresh() {
@@ -15,7 +12,7 @@ function refresh() {
 
     openedFile.families.forEach((f) => {
         const o = document.createElement('option');
-        o.innerHTML = FormatFamily(openedFile, f);
+        o.innerHTML = f.formatFamily(openedFile);
         o.value = '' + f.id;
         familySelectEl.append(o);
     });
@@ -30,18 +27,18 @@ function refresh() {
 
         if (family.husband !== null) {
             firstRow.append(
-                infoBox(FindPerson(openedFile, family.husband), 'husband'),
+                infoBox(openedFile.findPerson(family.husband), 'husband'),
             );
         } else {
-            firstRow.append(infoBox('none', 'husband'));
+            firstRow.append(infoBox(undefined, 'husband'));
         }
 
         if (family.wife !== null) {
             firstRow.append(
-                infoBox(FindPerson(openedFile, family.wife), 'wife'),
+                infoBox(openedFile.findPerson(family.wife), 'wife'),
             );
         } else {
-            firstRow.append(infoBox('none', 'wife'));
+            firstRow.append(infoBox(undefined, 'wife'));
         }
 
         mainArea.append(firstRow);
@@ -58,15 +55,15 @@ function refresh() {
         secondRow.classList.add('hcont');
 
         family.children.forEach((c) => {
-            secondRow.append(infoBox(FindPerson(openedFile, c), 'child'));
+            secondRow.append(infoBox(openedFile.findPerson(c), 'child'));
         });
-        secondRow.append(infoBox('none', 'child'));
+        secondRow.append(infoBox(undefined, 'child'));
 
         mainArea.append(secondRow);
     }
 }
 
-function infoBox(person: Person | 'none', role: 'husband' | 'wife' | 'child') {
+function infoBox(person: Person | undefined, role: 'husband' | 'wife' | 'child') {
     const roleName = {
         husband: 'Make',
         wife: 'Maka',
@@ -80,7 +77,7 @@ function infoBox(person: Person | 'none', role: 'husband' | 'wife' | 'child') {
 
     const box = document.createElement('div');
     box.classList.add('infoBox');
-    if (person === 'none') {
+    if (!person) {
         const button = document.createElement('button');
         button.innerHTML = '➕';
         wrapper.append(button);
@@ -155,10 +152,10 @@ familySelectEl.onchange = (e) => {
 
 const mainArea = document.getElementById('viewer')!;
 
-let openedFile: Slackt = { people: [], families: [] };
+let openedFile = new Slackt();
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = JSON.parse(fromLS) || { people: [], families: [] };
+    openedFile = Slackt.fromString(fromLS);
 }
 
 let selectedFamily: number | null = null;

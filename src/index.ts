@@ -1,15 +1,8 @@
 import {
     Slackt,
-    FormatName,
-    FindPerson,
-    FindPeople,
     Person,
-    FormatFamily,
-    FindDirectRelatives,
-    AddPerson,
-    FindFamily,
     Family,
-    AddFamily,
+    FindDirectRelatives,
     download,
     open,
     clear,
@@ -71,10 +64,10 @@ analyseButton.onclick = () => {
 
     console.log(
         'Networks:',
-        networks.map((set) =>
-            FindPeople(openedFile, Array.from(set)).map((p) =>
-                FormatName(p, 'full'),
-            ),
+        networks.map((set) => 
+            Array.from(set)
+            .map((id) => openedFile.getPerson(id))
+            .map((p) => p.formatName('full')),
         ),
     );
 };
@@ -84,7 +77,7 @@ function analysePerson(p: Person, counted: Set<number>) {
     FindDirectRelatives(openedFile, p.id)
         .filter((p) => !counted.has(p))
         .forEach((r) => {
-            counted = analysePerson(FindPerson(openedFile, r), counted);
+            counted = analysePerson(openedFile.getPerson(r), counted);
         });
 
     return counted;
@@ -109,7 +102,7 @@ clearSearchFamilies.onclick = () => {
 };
 
 addPerson.onclick = () => {
-    selectedPerson = AddPerson(openedFile);
+    selectedPerson = openedFile.addEmptyPerson();
     refreshPersonInspector();
     refreshPersonList();
     let p = peopleSection.querySelector(
@@ -118,7 +111,7 @@ addPerson.onclick = () => {
     p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 addFamily.onclick = () => {
-    selectedFamily = AddFamily(openedFile);
+    selectedFamily = openedFile.addEmptyFamily();
     refreshFamilyInspector();
     refreshFamilyList();
     let f = familiesSection.querySelector(
@@ -130,7 +123,7 @@ addFamily.onclick = () => {
 const refreshPersonList = () => {
     peopleSection.innerHTML = '';
 
-    localStorage.setItem('openedFile', JSON.stringify(openedFile));
+    localStorage.setItem('openedFile', openedFile.stringify());
 
     if (!openedFile) return;
 
@@ -138,13 +131,13 @@ const refreshPersonList = () => {
     let people = openedFile.people;
     if (filter) {
         people = people.filter((p) =>
-            FormatName(p, 'full').toLowerCase().includes(filter.toLowerCase()),
+            p.formatName('full').toLowerCase().includes(filter.toLowerCase()),
         );
     }
 
     people.forEach((p) => {
         let el = document.createElement('p');
-        el.innerHTML = FormatName(p, 'extra') ?? '?';
+        el.innerHTML = p.formatName('extra') ?? '?';
         if (p.id === selectedPerson) el.classList.add('embolden');
         el.setAttribute('data-id', '' + p.id);
         el.setAttribute('data-type', 'person');
@@ -159,7 +152,7 @@ const refreshPersonList = () => {
 const refreshFamilyList = () => {
     familiesSection.innerHTML = '';
 
-    localStorage.setItem('openedFile', JSON.stringify(openedFile));
+    localStorage.setItem('openedFile', openedFile.stringify());
 
     if (!openedFile) return;
 
@@ -167,15 +160,15 @@ const refreshFamilyList = () => {
     let families = openedFile.families;
     if (filter) {
         families = families.filter((f) =>
-            FormatFamily(openedFile, f)
-                .toLowerCase()
-                .includes(filter.toLowerCase()),
+            f.formatFamily(openedFile)
+            .toLowerCase()
+            .includes(filter.toLowerCase()),
         );
     }
 
     families.forEach((f) => {
         let el = document.createElement('p');
-        el.innerHTML = FormatFamily(openedFile!, f);
+        el.innerHTML = f.formatFamily(openedFile);
         if (f.id === selectedFamily) el.classList.add('embolden');
         el.setAttribute('data-id', '' + f.id);
         el.setAttribute('data-type', 'family');
@@ -207,7 +200,7 @@ const refreshPersonInspector = () => {
         'dateDeath',
     ];
 
-    let person = FindPerson(openedFile, selectedPerson);
+    let person = openedFile.getPerson(selectedPerson);
 
     let formEl = document.createElement('form');
     formEl.classList.add('person');
@@ -266,7 +259,7 @@ const refreshFamilyInspector = () => {
 
     let keys: (keyof Family)[] = ['nameLastOverride', 'dateStart'];
 
-    let family = FindFamily(openedFile, selectedFamily);
+    let family = openedFile.getFamily(selectedFamily);
 
     let formEl = document.createElement('form');
     formEl.addEventListener('submit', (e) => {
@@ -299,7 +292,7 @@ const refreshFamilyInspector = () => {
     let husbandEl = document.createElement('p');
     husbandEl.classList.add('grow');
     husbandEl.innerHTML = family.husband
-        ? FormatName(FindPerson(openedFile, family.husband), 'full')
+        ? openedFile.getPerson(family.husband).formatName('full')
         : '?';
     husbandContainer.append(husbandEl);
 
@@ -337,7 +330,7 @@ const refreshFamilyInspector = () => {
     let wifeEl = document.createElement('p');
     wifeEl.classList.add('grow');
     wifeEl.innerHTML = family.wife
-        ? FormatName(FindPerson(openedFile, family.wife), 'full')
+        ? openedFile.getPerson(family.wife).formatName('full')
         : '?';
     wifeContainer.append(wifeEl);
 
@@ -376,9 +369,9 @@ const refreshFamilyInspector = () => {
         let childContainer = document.createElement('div');
         childContainer.classList.add('hcont');
 
-        let child = FindPerson(openedFile, c);
+        let child = openedFile.getPerson(c);
         let childEl = document.createElement('p');
-        childEl.innerHTML = FormatName(child, 'full');
+        childEl.innerHTML = child.formatName('full');
         childEl.classList.add('grow');
         childContainer.append(childEl);
 
@@ -465,7 +458,7 @@ function select(e: MouseEvent) {
     refreshFamilyList();
 }
 
-let openedFile: Slackt = { people: [], families: [] };
+let openedFile = new Slackt();
 
 let selectedPerson: number | null = null;
 let sp = localStorage.getItem('selectedPerson');
@@ -477,7 +470,7 @@ if (sf !== null && sf !== 'null') selectedFamily = parseInt(sf);
 
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = JSON.parse(fromLS) || { people: [], families: [] };
+    openedFile = Slackt.fromString(fromLS);
 }
 
 refreshPersonList();
