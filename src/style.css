@@ -74,6 +74,12 @@ main>* {
     -ms-overflow-style: none;
 }
 
+.network {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+}
+
 .embolden {
     font-weight: bolder;
 }
