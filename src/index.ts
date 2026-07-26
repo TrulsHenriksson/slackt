@@ -14,9 +14,12 @@ import {
     open,
     clear,
 } from './typesnmethods.js';
+import {identify_people} from './merger.js'
 
 const openButton = document.getElementById('open');
 if (!openButton) throw new Error();
+const openMergeButton = document.getElementById('openMerge');
+if (!openMergeButton) throw new Error();
 const saveButton = document.getElementById('save');
 if (!saveButton) throw new Error();
 const clearButton = document.getElementById('clear');
@@ -49,6 +52,23 @@ openButton.addEventListener('change', async (e) => {
     refreshPersonList();
     refreshFamilyList();
 });
+openMergeButton.addEventListener('change', async (e) => {
+    // openedFile = (await open(e, openedFile)) || openedFile?
+    if (e.target instanceof HTMLInputElement) {
+        const file = e.target.files?.item(0)
+        const text = await file?.text()
+        if (!file || !text) {
+            return
+        }
+        let newFile: Slackt = {people: [], families: []}
+        try {
+            newFile = JSON.parse(text)
+        } catch (error) {
+            return
+        }
+        identify_people(openedFile, newFile)
+    }
+})
 saveButton.onclick = () => download(openedFile);
 clearButton.onclick = () => {
     openedFile = clear();
