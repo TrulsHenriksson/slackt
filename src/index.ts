@@ -15,40 +15,53 @@ import {
     clear,
 } from './typesnmethods.js';
 
-const openButton = document.getElementById('open');
-if (!openButton) throw new Error();
-const saveButton = document.getElementById('save');
-if (!saveButton) throw new Error();
-const clearButton = document.getElementById('clear');
-if (!clearButton) throw new Error();
-const searchPeople = document.getElementById('searchPeople');
-if (!searchPeople) throw new Error();
-const searchFamilies = document.getElementById('searchFamilies');
-if (!searchFamilies) throw new Error();
-const clearSearchPeople = document.getElementById('clearSearchPeople');
-if (!clearSearchPeople) throw new Error();
-const clearSearchFamilies = document.getElementById('clearSearchFamilies');
-if (!clearSearchFamilies) throw new Error();
-const peopleSection = document.querySelector('#people .list');
-if (!peopleSection) throw new Error();
-const familiesSection = document.querySelector('#families .list');
-if (!familiesSection) throw new Error();
-const personInspector = document.getElementById('person');
-if (!personInspector) throw new Error();
-const familyInspector = document.getElementById('family');
-if (!familyInspector) throw new Error();
-const addPerson = document.getElementById('addPerson');
-if (!addPerson) throw new Error();
-const addFamily = document.getElementById('addFamily');
-if (!addFamily) throw new Error();
+// Guarantee that none of these are null because we check them below
+const openButton = document.getElementById('open')!;
+const saveButton = document.getElementById('save')!;
+const clearButton = document.getElementById('clear')!;
+const analyseButton = document.getElementById('analyse')!;
+const searchPeople = document.getElementById('searchPeople')!;
+const searchFamilies = document.getElementById('searchFamilies')!;
+const clearSearchPeople = document.getElementById('clearSearchPeople')!;
+const clearSearchFamilies = document.getElementById('clearSearchFamilies')!;
+const peopleSection = document.querySelector('#people .list')!;
+const familiesSection = document.querySelector('#families .list')!;
+const personInspector = document.getElementById('person')!;
+const familyInspector = document.getElementById('family')!;
+const addPerson = document.getElementById('addPerson')!;
+const addFamily = document.getElementById('addFamily')!;
+// Make sure all of them exist
+[
+    openButton,
+    saveButton,
+    clearButton,
+    analyseButton,
+    searchPeople,
+    searchFamilies,
+    clearSearchPeople,
+    clearSearchFamilies,
+    peopleSection,
+    familiesSection,
+    personInspector,
+    familyInspector,
+    addPerson,
+    addFamily,
+].forEach(element => {
+    if (!element) throw new Error();
+});
 
 openButton.addEventListener('change', async (e) => {
     openedFile = (await open(e, openedFile)) || openedFile;
     refreshPersonList();
     refreshFamilyList();
 });
+
 saveButton.onclick = () => download(openedFile);
+
+let timeStampLastClickedClear = 0
 clearButton.onclick = () => {
+    // Click twice within 2 seconds to clear
+    if (Date.now() - timeStampLastClickedClear < 2000) {
     openedFile = clear();
     selectedPerson = null;
     selectedFamily = null;
@@ -56,7 +69,42 @@ clearButton.onclick = () => {
     refreshFamilyList();
     refreshPersonInspector();
     refreshFamilyInspector();
+    } else {
+        alert("Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.")
+    }
+    timeStampLastClickedClear = Date.now()
 };
+
+analyseButton.onclick = () => {
+    let networks: Set<number>[] = [];
+    for (let i = 0; i < openedFile.people.length; i++) {
+        if (networks.some((n) => n.has(openedFile.people[i].id))) continue;
+
+        let p = openedFile.people[i];
+        let network = analysePerson(p, new Set<number>());
+        networks.push(network);
+    }
+
+    console.log(
+        'Networks:',
+        networks.map((set) =>
+            FindPeople(openedFile, Array.from(set)).map((p) =>
+                FormatName(p, 'full'),
+            ),
+        ),
+    );
+};
+
+function analysePerson(p: Person, counted: Set<number>) {
+    counted.add(p.id);
+    FindDirectRelatives(openedFile, p.id)
+        .filter((p) => !counted.has(p))
+        .forEach((r) => {
+            counted = analysePerson(FindPerson(openedFile, r), counted);
+        });
+
+    return counted;
+}
 
 searchPeople.oninput = () => {
     refreshPersonList();
@@ -95,7 +143,7 @@ addFamily.onclick = () => {
     f?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
-const refreshPersonList = () => {
+function refreshPersonList() {
     peopleSection.innerHTML = '';
 
     localStorage.setItem('openedFile', JSON.stringify(openedFile));
@@ -122,9 +170,9 @@ const refreshPersonList = () => {
 
     let p = peopleSection.querySelector(`[data-id="${selectedPerson}"]`);
     p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-};
+}
 
-const refreshFamilyList = () => {
+function refreshFamilyList() {
     familiesSection.innerHTML = '';
 
     localStorage.setItem('openedFile', JSON.stringify(openedFile));
@@ -153,7 +201,7 @@ const refreshFamilyList = () => {
 
     let p = familiesSection.querySelector(`[data-id="${selectedFamily}"]`);
     p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-};
+}
 
 const refreshPersonInspector = () => {
     localStorage.setItem(
@@ -220,7 +268,7 @@ const refreshPersonInspector = () => {
     inpEl?.focus();
 };
 
-const refreshFamilyInspector = () => {
+function refreshFamilyInspector() {
     localStorage.setItem(
         'selectedFamily',
         selectedFamily !== null ? '' + selectedFamily : 'null',
