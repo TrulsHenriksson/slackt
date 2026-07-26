@@ -1,4 +1,4 @@
-import { FormatName, FindPerson, FindPeople, FormatFamily, FindDirectRelatives, AddPerson, FindFamily, AddFamily, download, open, clear, } from './typesnmethods.js';
+import { FormatName, FindPerson, FormatFamily, AddPerson, FindFamily, AddFamily, download, open, clear, } from './typesnmethods.js';
 const openButton = document.getElementById('open');
 if (!openButton)
     throw new Error();
@@ -7,9 +7,6 @@ if (!saveButton)
     throw new Error();
 const clearButton = document.getElementById('clear');
 if (!clearButton)
-    throw new Error();
-const analyseButton = document.getElementById('analyse');
-if (!analyseButton)
     throw new Error();
 const searchPeople = document.getElementById('searchPeople');
 if (!searchPeople)
@@ -56,26 +53,6 @@ clearButton.onclick = () => {
     refreshPersonInspector();
     refreshFamilyInspector();
 };
-analyseButton.onclick = () => {
-    let networks = [];
-    for (let i = 0; i < openedFile.people.length; i++) {
-        if (networks.some((n) => n.has(openedFile.people[i].id)))
-            continue;
-        let p = openedFile.people[i];
-        let network = analysePerson(p, new Set());
-        networks.push(network);
-    }
-    console.log('Networks:', networks.map((set) => FindPeople(openedFile, Array.from(set)).map((p) => FormatName(p, 'full'))));
-};
-function analysePerson(p, counted) {
-    counted.add(p.id);
-    FindDirectRelatives(openedFile, p.id)
-        .filter((p) => !counted.has(p))
-        .forEach((r) => {
-        counted = analysePerson(FindPerson(openedFile, r), counted);
-    });
-    return counted;
-}
 searchPeople.oninput = () => {
     refreshPersonList();
 };
