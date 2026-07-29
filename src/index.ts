@@ -37,7 +37,7 @@ const addFamily = document.getElementById('addFamily')!;
     familyInspector,
     addPerson,
     addFamily,
-].forEach(element => {
+].forEach((element) => {
     if (!element) throw new Error();
 });
 
@@ -49,21 +49,23 @@ openButton.addEventListener('change', async (e) => {
 
 saveButton.onclick = () => download(openedFile);
 
-let timeStampLastClickedClear = 0
+let timeStampLastClickedClear = 0;
 clearButton.onclick = () => {
     // Click twice within 2 seconds to clear
     if (Date.now() - timeStampLastClickedClear < 2000) {
-    openedFile = clear();
-    selectedPerson = null;
-    selectedFamily = null;
-    refreshPersonList();
-    refreshFamilyList();
-    refreshPersonInspector();
-    refreshFamilyInspector();
+        openedFile = clear();
+        selectedPerson = null;
+        selectedFamily = null;
+        refreshPersonList();
+        refreshFamilyList();
+        refreshPersonInspector();
+        refreshFamilyInspector();
     } else {
-        alert("Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.")
+        alert(
+            'Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.',
+        );
     }
-    timeStampLastClickedClear = Date.now()
+    timeStampLastClickedClear = Date.now();
 };
 
 function analysePerson(p: Person, counted: Set<number>) {
@@ -154,9 +156,10 @@ function refreshFamilyList() {
     let families = openedFile.families;
     if (filter) {
         families = families.filter((f) =>
-            f.formatFamily(openedFile)
-            .toLowerCase()
-            .includes(filter.toLowerCase()),
+            f
+                .formatFamily(openedFile)
+                .toLowerCase()
+                .includes(filter.toLowerCase()),
         );
     }
 
@@ -421,7 +424,7 @@ function refreshFamilyInspector() {
     });
 
     familyInspector.append(formEl);
-};
+}
 
 function select(e: MouseEvent) {
     let target = e.target as Element;

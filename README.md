@@ -1,15 +1,5 @@
-# slackt
+# Slackt
 
-To install dependencies:
+Slackt är ett släktforskningsprogram som är skrivet i TypeScript och körs i webbläsaren.
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.1.8. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Kör `npm run build` för att bygga projektet och `npm run dev` för att köra det i utvecklingsläge.
