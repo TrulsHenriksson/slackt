@@ -3,11 +3,8 @@ import {
     open,
     download,
     clear,
-    FindPeople,
     FindDirectRelatives,
     Person,
-    FindPerson,
-    FormatName,
 } from './typesnmethods.js';
 
 function refresh() {
@@ -16,7 +13,7 @@ function refresh() {
 
     openedFile.people.forEach((p) => {
         const o = document.createElement('option');
-        o.innerHTML = FormatName(p, 'extra');
+        o.innerHTML = p.formatName('extra');
         o.value = '' + p.id;
         personSelectEl.append(o);
     });
@@ -57,10 +54,10 @@ listNetworkButton.onclick = () => {
     }
 
     networks
-        .map((set) =>
-            FindPeople(openedFile, Array.from(set)).map((p) =>
-                FormatName(p, 'full'),
-            ),
+        .map((set) => 
+            Array.from(set)
+            .map((id) => openedFile.getPerson(id))
+            .map((p) => p.formatName('full')),
         )
         .forEach((network, i) => {
             let h = document.createElement('h3');
@@ -84,7 +81,7 @@ function analysePerson(p: Person, counted: Set<number>) {
     FindDirectRelatives(openedFile, p.id)
         .filter((p) => !counted.has(p))
         .forEach((r) => {
-            counted = analysePerson(FindPerson(openedFile, r), counted);
+            counted = analysePerson(openedFile.getPerson(r), counted);
         });
 
     return counted;
@@ -103,10 +100,10 @@ personSelectEl.onchange = (e) => {
 
 const mainArea = document.getElementById('viewer')!;
 
-let openedFile: Slackt = { people: [], families: [] };
+let openedFile = new Slackt();
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = JSON.parse(fromLS) || { people: [], families: [] };
+    openedFile = Slackt.fromString(fromLS);
 }
 
 let selectedPerson: number | null = null;

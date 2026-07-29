@@ -1,58 +1,69 @@
-import { FormatName, FindPerson, FormatFamily, AddPerson, FindFamily, AddFamily, download, open, clear, } from './typesnmethods.js';
+import { Slackt, FindDirectRelatives, download, open, clear, } from './typesnmethods.js';
+// Guarantee that none of these are null because we check them below
 const openButton = document.getElementById('open');
-if (!openButton)
-    throw new Error();
 const saveButton = document.getElementById('save');
-if (!saveButton)
-    throw new Error();
 const clearButton = document.getElementById('clear');
-if (!clearButton)
-    throw new Error();
 const searchPeople = document.getElementById('searchPeople');
-if (!searchPeople)
-    throw new Error();
 const searchFamilies = document.getElementById('searchFamilies');
-if (!searchFamilies)
-    throw new Error();
 const clearSearchPeople = document.getElementById('clearSearchPeople');
-if (!clearSearchPeople)
-    throw new Error();
 const clearSearchFamilies = document.getElementById('clearSearchFamilies');
-if (!clearSearchFamilies)
-    throw new Error();
 const peopleSection = document.querySelector('#people .list');
-if (!peopleSection)
-    throw new Error();
 const familiesSection = document.querySelector('#families .list');
-if (!familiesSection)
-    throw new Error();
 const personInspector = document.getElementById('person');
-if (!personInspector)
-    throw new Error();
 const familyInspector = document.getElementById('family');
-if (!familyInspector)
-    throw new Error();
 const addPerson = document.getElementById('addPerson');
-if (!addPerson)
-    throw new Error();
 const addFamily = document.getElementById('addFamily');
-if (!addFamily)
-    throw new Error();
+// Make sure all of them exist
+[
+    openButton,
+    saveButton,
+    clearButton,
+    searchPeople,
+    searchFamilies,
+    clearSearchPeople,
+    clearSearchFamilies,
+    peopleSection,
+    familiesSection,
+    personInspector,
+    familyInspector,
+    addPerson,
+    addFamily,
+].forEach(element => {
+    if (!element)
+        throw new Error();
+});
 openButton.addEventListener('change', async (e) => {
     openedFile = (await open(e, openedFile)) || openedFile;
     refreshPersonList();
     refreshFamilyList();
 });
 saveButton.onclick = () => download(openedFile);
+let timeStampLastClickedClear = 0;
 clearButton.onclick = () => {
-    openedFile = clear();
-    selectedPerson = null;
-    selectedFamily = null;
-    refreshPersonList();
-    refreshFamilyList();
-    refreshPersonInspector();
-    refreshFamilyInspector();
+    // Click twice within 2 seconds to clear
+    if (Date.now() - timeStampLastClickedClear < 2000) {
+        openedFile = clear();
+        selectedPerson = null;
+        selectedFamily = null;
+        refreshPersonList();
+        refreshFamilyList();
+        refreshPersonInspector();
+        refreshFamilyInspector();
+    }
+    else {
+        alert("Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.");
+    }
+    timeStampLastClickedClear = Date.now();
 };
+function analysePerson(p, counted) {
+    counted.add(p.id);
+    FindDirectRelatives(openedFile, p.id)
+        .filter((p) => !counted.has(p))
+        .forEach((r) => {
+        counted = analysePerson(openedFile.getPerson(r), counted);
+    });
+    return counted;
+}
 searchPeople.oninput = () => {
     refreshPersonList();
 };
@@ -68,32 +79,32 @@ clearSearchFamilies.onclick = () => {
     refreshFamilyList();
 };
 addPerson.onclick = () => {
-    selectedPerson = AddPerson(openedFile);
+    selectedPerson = openedFile.addEmptyPerson();
     refreshPersonInspector();
     refreshPersonList();
     let p = peopleSection.querySelector(`[data-id="${selectedPerson}"]`);
     p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 addFamily.onclick = () => {
-    selectedFamily = AddFamily(openedFile);
+    selectedFamily = openedFile.addEmptyFamily();
     refreshFamilyInspector();
     refreshFamilyList();
     let f = familiesSection.querySelector(`[data-id="${selectedFamily}"]`);
     f?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
-const refreshPersonList = () => {
+function refreshPersonList() {
     peopleSection.innerHTML = '';
-    localStorage.setItem('openedFile', JSON.stringify(openedFile));
+    localStorage.setItem('openedFile', openedFile.stringify());
     if (!openedFile)
         return;
     let filter = searchPeople.value;
     let people = openedFile.people;
     if (filter) {
-        people = people.filter((p) => FormatName(p, 'full').toLowerCase().includes(filter.toLowerCase()));
+        people = people.filter((p) => p.formatName('full').toLowerCase().includes(filter.toLowerCase()));
     }
     people.forEach((p) => {
         let el = document.createElement('p');
-        el.innerHTML = FormatName(p, 'extra') ?? '?';
+        el.innerHTML = p.formatName('extra') ?? '?';
         if (p.id === selectedPerson)
             el.classList.add('embolden');
         el.setAttribute('data-id', '' + p.id);
@@ -103,22 +114,22 @@ const refreshPersonList = () => {
     });
     let p = peopleSection.querySelector(`[data-id="${selectedPerson}"]`);
     p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-};
-const refreshFamilyList = () => {
+}
+function refreshFamilyList() {
     familiesSection.innerHTML = '';
-    localStorage.setItem('openedFile', JSON.stringify(openedFile));
+    localStorage.setItem('openedFile', openedFile.stringify());
     if (!openedFile)
         return;
     let filter = searchFamilies.value;
     let families = openedFile.families;
     if (filter) {
-        families = families.filter((f) => FormatFamily(openedFile, f)
+        families = families.filter((f) => f.formatFamily(openedFile)
             .toLowerCase()
             .includes(filter.toLowerCase()));
     }
     families.forEach((f) => {
         let el = document.createElement('p');
-        el.innerHTML = FormatFamily(openedFile, f);
+        el.innerHTML = f.formatFamily(openedFile);
         if (f.id === selectedFamily)
             el.classList.add('embolden');
         el.setAttribute('data-id', '' + f.id);
@@ -128,7 +139,7 @@ const refreshFamilyList = () => {
     });
     let p = familiesSection.querySelector(`[data-id="${selectedFamily}"]`);
     p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-};
+}
 const refreshPersonInspector = () => {
     localStorage.setItem('selectedPerson', selectedPerson !== null ? '' + selectedPerson : 'null');
     personInspector.innerHTML = '';
@@ -143,7 +154,7 @@ const refreshPersonInspector = () => {
         'dateBirth',
         'dateDeath',
     ];
-    let person = FindPerson(openedFile, selectedPerson);
+    let person = openedFile.getPerson(selectedPerson);
     let formEl = document.createElement('form');
     formEl.classList.add('person');
     formEl.onchange = (e) => {
@@ -177,7 +188,7 @@ const refreshPersonInspector = () => {
     let inpEl = document.getElementById('nameFirst');
     inpEl?.focus();
 };
-const refreshFamilyInspector = () => {
+function refreshFamilyInspector() {
     localStorage.setItem('selectedFamily', selectedFamily !== null ? '' + selectedFamily : 'null');
     familyInspector.innerHTML = '';
     if (selectedFamily === null) {
@@ -185,7 +196,7 @@ const refreshFamilyInspector = () => {
         return;
     }
     let keys = ['nameLastOverride', 'dateStart'];
-    let family = FindFamily(openedFile, selectedFamily);
+    let family = openedFile.getFamily(selectedFamily);
     let formEl = document.createElement('form');
     formEl.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -215,7 +226,7 @@ const refreshFamilyInspector = () => {
     let husbandEl = document.createElement('p');
     husbandEl.classList.add('grow');
     husbandEl.innerHTML = family.husband
-        ? FormatName(FindPerson(openedFile, family.husband), 'full')
+        ? openedFile.getPerson(family.husband).formatName('full')
         : '?';
     husbandContainer.append(husbandEl);
     if (family.husband === null) {
@@ -249,7 +260,7 @@ const refreshFamilyInspector = () => {
     let wifeEl = document.createElement('p');
     wifeEl.classList.add('grow');
     wifeEl.innerHTML = family.wife
-        ? FormatName(FindPerson(openedFile, family.wife), 'full')
+        ? openedFile.getPerson(family.wife).formatName('full')
         : '?';
     wifeContainer.append(wifeEl);
     if (family.wife === null) {
@@ -283,9 +294,9 @@ const refreshFamilyInspector = () => {
     family.children.forEach((c) => {
         let childContainer = document.createElement('div');
         childContainer.classList.add('hcont');
-        let child = FindPerson(openedFile, c);
+        let child = openedFile.getPerson(c);
         let childEl = document.createElement('p');
-        childEl.innerHTML = FormatName(child, 'full');
+        childEl.innerHTML = child.formatName('full');
         childEl.classList.add('grow');
         childContainer.append(childEl);
         let arrowsEl = document.createElement('div');
@@ -332,7 +343,8 @@ const refreshFamilyInspector = () => {
         formEl.append(inputEl);
     });
     familyInspector.append(formEl);
-};
+}
+;
 function select(e) {
     let target = e.target;
     let id = target.attributes.getNamedItem('data-id')?.value;
@@ -358,7 +370,7 @@ function select(e) {
     refreshPersonList();
     refreshFamilyList();
 }
-let openedFile = { people: [], families: [] };
+let openedFile = new Slackt();
 let selectedPerson = null;
 let sp = localStorage.getItem('selectedPerson');
 if (sp !== null && sp !== 'null')
@@ -369,7 +381,7 @@ if (sf !== null && sf !== 'null')
     selectedFamily = parseInt(sf);
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = JSON.parse(fromLS) || { people: [], families: [] };
+    openedFile = Slackt.fromString(fromLS);
 }
 refreshPersonList();
 refreshFamilyList();

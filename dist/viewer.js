@@ -1,10 +1,10 @@
-import { open, download, clear, FormatFamily, FindPerson, } from './typesnmethods.js';
+import { Slackt, open, download, clear, } from './typesnmethods.js';
 function refresh() {
     familySelectEl.innerHTML =
         '<option value="null" disabled selected hidden>Ingen vald</option>';
     openedFile.families.forEach((f) => {
         const o = document.createElement('option');
-        o.innerHTML = FormatFamily(openedFile, f);
+        o.innerHTML = f.formatFamily(openedFile);
         o.value = '' + f.id;
         familySelectEl.append(o);
     });
@@ -15,16 +15,16 @@ function refresh() {
         const firstRow = document.createElement('div');
         firstRow.classList.add('hcont');
         if (family.husband !== null) {
-            firstRow.append(infoBox(FindPerson(openedFile, family.husband), 'husband'));
+            firstRow.append(infoBox(openedFile.findPerson(family.husband), 'husband'));
         }
         else {
-            firstRow.append(infoBox('none', 'husband'));
+            firstRow.append(infoBox(undefined, 'husband'));
         }
         if (family.wife !== null) {
-            firstRow.append(infoBox(FindPerson(openedFile, family.wife), 'wife'));
+            firstRow.append(infoBox(openedFile.findPerson(family.wife), 'wife'));
         }
         else {
-            firstRow.append(infoBox('none', 'wife'));
+            firstRow.append(infoBox(undefined, 'wife'));
         }
         mainArea.append(firstRow);
         mainArea.append((() => {
@@ -36,9 +36,9 @@ function refresh() {
         const secondRow = document.createElement('div');
         secondRow.classList.add('hcont');
         family.children.forEach((c) => {
-            secondRow.append(infoBox(FindPerson(openedFile, c), 'child'));
+            secondRow.append(infoBox(openedFile.findPerson(c), 'child'));
         });
-        secondRow.append(infoBox('none', 'child'));
+        secondRow.append(infoBox(undefined, 'child'));
         mainArea.append(secondRow);
     }
 }
@@ -54,7 +54,7 @@ function infoBox(person, role) {
         wrapper.innerHTML = '<p class="small">' + roleName + '</p>';
     const box = document.createElement('div');
     box.classList.add('infoBox');
-    if (person === 'none') {
+    if (!person) {
         const button = document.createElement('button');
         button.innerHTML = '➕';
         wrapper.append(button);
@@ -110,10 +110,10 @@ familySelectEl.onchange = (e) => {
     refresh();
 };
 const mainArea = document.getElementById('viewer');
-let openedFile = { people: [], families: [] };
+let openedFile = new Slackt();
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = JSON.parse(fromLS) || { people: [], families: [] };
+    openedFile = Slackt.fromString(fromLS);
 }
 let selectedFamily = null;
 let sf = localStorage.getItem('selectedFamily');

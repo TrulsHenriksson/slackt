@@ -1,42 +1,116 @@
-export function AddPerson(s) {
-    let newId = s.people.length;
-    s.people.push({
-        id: newId,
-        nameFirst: '',
-        nameLast: '',
-        nameLastMaiden: '',
-        dateBirth: '',
-        dateDeath: '',
-    });
-    return newId;
+export class Person {
+    constructor(id, nameFirst = '', nameLast = '', nameLastMaiden = '', dateBirth = '', dateDeath = '') {
+        this.id = id;
+        this.nameFirst = nameFirst;
+        this.nameLast = nameLast;
+        this.nameLastMaiden = nameLastMaiden;
+        this.dateBirth = dateBirth;
+        this.dateDeath = dateDeath;
+    }
+    formatName(type = 'short') {
+        if (type === 'short')
+            return this.nameFirst;
+        let full = `${this.nameFirst} ${this.nameLast}${this.nameLastMaiden ? ` (f. ${this.nameLastMaiden})` : ''}`;
+        if (type === 'full')
+            return full;
+        if (type === 'extra')
+            return `#${this.id} ${full}`;
+        return '';
+    }
+    asObject() {
+        return Object.assign({}, this);
+    }
+    static fromObject(obj) {
+        return Object.assign(new Person(obj.id), obj);
+    }
 }
-export function FindPerson(s, personId) {
-    let person = s.people.find((p) => p.id === personId);
-    if (person === undefined)
-        throw new Error(`Person ${personId} does not exist`);
-    return person;
+;
+export class Family {
+    constructor(id, husband = null, wife = null, children = [], nameLastOverride = '', dateStart = '') {
+        this.id = id;
+        this.husband = husband;
+        this.wife = wife;
+        this.children = children;
+        this.nameLastOverride = nameLastOverride;
+        this.dateStart = dateStart;
+    }
+    /** Format the family string using the given Slackt file. */
+    formatFamily(s) {
+        let husband = this.husband !== null ? s.findPerson(this.husband) : null;
+        let wife = this.wife !== null ? s.findPerson(this.wife) : null;
+        let husbandName = husband ? husband.formatName() : null;
+        let wifeName = wife ? wife.formatName() : null;
+        let childrenNames = this.children.map((c) => s.findPerson(c)?.formatName());
+        return `#${this.id} (${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
+    }
+    asObject() {
+        return Object.assign({}, this);
+    }
+    static fromObject(obj) {
+        return Object.assign(new Family(obj.id), obj);
+    }
 }
-export function FindPeople(s, personIds) {
-    return personIds.map((p) => FindPerson(s, p));
-}
-export function GetPerson(s, personId) {
-    return s.people.find((p) => p.id === personId);
-}
-export function FormatName(p, type = 'short') {
-    if (type === 'short')
-        return p.nameFirst;
-    let full = `${p.nameFirst} ${p.nameLast}${p.nameLastMaiden ? ` (f. ${p.nameLastMaiden})` : ''}`;
-    if (type === 'full')
-        return full;
-    if (type === 'extra')
-        return `#${p.id} ${full}`;
-    return '';
-}
-export function FindFamily(s, familyId) {
-    let family = s.families.find((p) => p.id === familyId);
-    if (family === undefined)
-        throw new Error(`Family ${familyId} does not exist`);
-    return family;
+;
+export class Slackt {
+    constructor(people = [], families = []) {
+        this.people = people;
+        this.families = families;
+    }
+    addEmptyPerson() {
+        let newId = this.people.length;
+        this.people.push(new Person(newId));
+        return newId;
+    }
+    addEmptyFamily() {
+        let newId = this.families.length;
+        this.families.push(new Family(newId));
+        return newId;
+    }
+    /** Return the person with the given id, or undefined. */
+    findPerson(id) {
+        return this.people.find((p) => p.id === id);
+    }
+    /** Get a person, and throw an error if it does not exist. */
+    getPerson(id) {
+        let p = this.findPerson(id);
+        if (p === undefined)
+            throw new Error(`Person ${id} does not exist`);
+        return p;
+    }
+    /** Return the family with the given id, or undefined. */
+    findFamily(id) {
+        return this.families.find((f) => f.id === id);
+    }
+    /** Get a family, and throw an error if it does not exist. */
+    getFamily(id) {
+        let p = this.findFamily(id);
+        if (p === undefined)
+            throw new Error(`Family ${id} does not exist`);
+        return p;
+    }
+    addPersonToFamily(familyId, personId, role) {
+        let family = this.getFamily(familyId);
+        switch (role) {
+            case "husband": family.husband = personId;
+            case "wife": family.husband = personId;
+            case "child": family.children.push(personId);
+        }
+    }
+    asObject() {
+        return {
+            people: this.people.map((p) => p.asObject()),
+            families: this.families.map((f) => f.asObject()),
+        };
+    }
+    static fromObject(obj) {
+        return new Slackt(obj.people.map((p) => Person.fromObject(p)), obj.families.map((f) => Family.fromObject(f)));
+    }
+    stringify() {
+        return JSON.stringify(this.asObject());
+    }
+    static fromString(str) {
+        return Slackt.fromObject(JSON.parse(str));
+    }
 }
 export function FindDirectRelatives(s, personId) {
     let families = s.families.filter((f) => f.husband === personId ||
@@ -45,40 +119,8 @@ export function FindDirectRelatives(s, personId) {
     let allFamilyMembers = families.flatMap((f) => [f.husband, f.wife, ...f.children].filter((id) => id !== null));
     return allFamilyMembers.filter((id) => id !== personId);
 }
-export function FormatFamily(s, f) {
-    let husband = f.husband ? FindPerson(s, f.husband) : null;
-    let husbandName = husband ? FormatName(husband) : null;
-    let wife = f.wife ? FindPerson(s, f.wife) : null;
-    let wifeName = wife ? FormatName(wife) : null;
-    let children = f.children.map((c) => FormatName(FindPerson(s, c)));
-    return `#${f.id} (${f.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${children.length > 0 ? ' = ' + children.join(', ') : ''}`;
-}
-export function AddFamily(s) {
-    let newId = s.families.length;
-    s.families.push({
-        id: newId,
-        husband: null,
-        wife: null,
-        children: [],
-        nameLastOverride: '',
-        dateStart: '',
-    });
-    return newId;
-}
-export function AddPersonToFamily(s, familyId, personId, role) {
-    let family = s.families.find((f) => f.id === familyId);
-    if (!family)
-        throw new Error(`Family ${familyId} does not exist`);
-    if (role === 'husband')
-        family.husband = personId;
-    if (role === 'wife')
-        family.husband = personId;
-    if (role === 'child')
-        family.children.push(personId);
-    return family;
-}
 export function download(openedFile) {
-    const blob = new Blob([JSON.stringify(openedFile)], {
+    const blob = new Blob([openedFile.stringify()], {
         type: 'application/json',
     });
     const el = document.createElement('a');
@@ -106,19 +148,20 @@ export async function open(e, openedFile) {
             return null;
         }
         try {
-            openedFile = JSON.parse(text);
+            openedFile = Slackt.fromString(text);
         }
         catch (error) {
             console.error('Fel på filen', error);
         }
         if (openedFile) {
-            localStorage.setItem('openedFile', JSON.stringify(openedFile));
+            localStorage.setItem('openedFile', openedFile.stringify());
             return openedFile;
         }
     }
 }
 export function clear() {
-    localStorage.setItem('openedFile', '{ "people": [], "families": [] }');
-    return { people: [], families: [] };
+    let newFile = new Slackt();
+    localStorage.setItem('openedFile', newFile.stringify());
+    return newFile;
 }
 //# sourceMappingURL=typesnmethods.js.map
