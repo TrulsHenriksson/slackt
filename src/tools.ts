@@ -3,11 +3,8 @@ import {
     open,
     download,
     clear,
-    FindPeople,
     FindDirectRelatives,
     Person,
-    FindPerson,
-    FormatName,
 } from './typesnmethods.js';
 
 function refresh() {
@@ -16,7 +13,7 @@ function refresh() {
 
     openedFile.people.forEach((p) => {
         const o = document.createElement('option');
-        o.innerHTML = FormatName(p, 'extra');
+        o.innerHTML = p.formatName('extra');
         o.value = '' + p.id;
         personSelectEl.append(o);
     });
@@ -24,17 +21,27 @@ function refresh() {
     personSelectEl.value = '' + selectedPerson;
 }
 
-const openButton = document.getElementById('open');
-if (!openButton) throw new Error();
-const saveButton = document.getElementById('save');
-if (!saveButton) throw new Error();
-const clearButton = document.getElementById('clear');
-if (!clearButton) throw new Error();
+const openButton = document.getElementById('open')!;
+const saveButton = document.getElementById('save')!;
+const clearButton = document.getElementById('clear')!;
+const listNetworkButton = document.getElementById('listNetwork')!;
+//const listFamilyButton = document.getElementById('listFamily')!;
+const personSelectEl = document.getElementById(
+    'selectPerson',
+) as HTMLSelectElement;
+const mainArea = document.getElementById('viewer')!;
 
-const listNetworkButton = document.getElementById('listNetwork');
-if (!listNetworkButton) throw new Error();
-const listFamilyButton = document.getElementById('listFamily');
-if (!listFamilyButton) throw new Error();
+[
+    openButton,
+    saveButton,
+    clearButton,
+    listNetworkButton,
+    //listFamilyButton,
+    personSelectEl,
+    mainArea,
+].forEach((element) => {
+    if (!element) throw new Error();
+});
 
 openButton.addEventListener('change', async (e) => {
     openedFile = (await open(e, openedFile)) || openedFile;
@@ -47,21 +54,29 @@ clearButton.onclick = () => {
 };
 
 listNetworkButton.onclick = () => {
-    let networks: Set<number>[] = [];
+    let networksSet: Set<number>[] = [];
     for (let i = 0; i < openedFile.people.length; i++) {
-        if (networks.some((n) => n.has(openedFile.people[i].id))) continue;
+        if (networksSet.some((n) => n.has(openedFile.people[i].id))) continue;
 
         let p = openedFile.people[i];
         let network = analysePerson(p, new Set<number>());
-        networks.push(network);
+        networksSet.push(network);
     }
 
-    networks
-        .map((set) =>
-            FindPeople(openedFile, Array.from(set)).map((p) =>
-                FormatName(p, 'full'),
+    let networks = networksSet.map((set) =>
+        Array.from(set)
+            .map((id) => openedFile.getPerson(id))
+            .sort((a, b) =>
+                (a.nameLast + a.nameFirst).localeCompare(
+                    b.nameLast + b.nameFirst,
+                    'sv',
+                ),
             ),
-        )
+    );
+
+    networks
+        .filter((network) => network.length > 1)
+        .sort((a, b) => b.length - a.length)
         .forEach((network, i) => {
             let h = document.createElement('h3');
             h.innerHTML = `Nätverk ${i + 1} (${network.length} personer)`;
@@ -71,12 +86,38 @@ listNetworkButton.onclick = () => {
             d.classList.add('network');
             mainArea.append(d);
 
-            network.forEach((name) => {
+            network.forEach((person) => {
                 let p = document.createElement('p');
-                p.innerHTML = name + ',';
+                p.innerHTML = person.formatName('full') + ',';
                 d.append(p);
             });
         });
+
+    let lones = networks
+        .filter((network) => network.length === 1)
+        .flat()
+        .sort((a, b) =>
+            (a.nameLast + a.nameFirst).localeCompare(
+                b.nameLast + b.nameFirst,
+                'sv',
+            ),
+        );
+
+    if (lones.length > 0) {
+        let h = document.createElement('h3');
+        h.innerHTML = `Ensamvargar (${lones.length} personer)`;
+        mainArea.append(h);
+
+        let d = document.createElement('div');
+        d.classList.add('network');
+        mainArea.append(d);
+
+        lones.forEach((person) => {
+            let p = document.createElement('p');
+            p.innerHTML = person.formatName('full') + ',';
+            d.append(p);
+        });
+    }
 };
 
 function analysePerson(p: Person, counted: Set<number>) {
@@ -84,15 +125,11 @@ function analysePerson(p: Person, counted: Set<number>) {
     FindDirectRelatives(openedFile, p.id)
         .filter((p) => !counted.has(p))
         .forEach((r) => {
-            counted = analysePerson(FindPerson(openedFile, r), counted);
+            counted = analysePerson(openedFile.getPerson(r), counted);
         });
 
     return counted;
 }
-
-const personSelectEl = document.getElementById(
-    'selectPerson',
-) as HTMLSelectElement;
 
 personSelectEl.onchange = (e) => {
     let target = e.target as HTMLSelectElement;
@@ -101,12 +138,10 @@ personSelectEl.onchange = (e) => {
     refresh();
 };
 
-const mainArea = document.getElementById('viewer')!;
-
-let openedFile: Slackt = { people: [], families: [] };
+let openedFile = new Slackt();
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = JSON.parse(fromLS) || { people: [], families: [] };
+    openedFile = Slackt.fromString(fromLS);
 }
 
 let selectedPerson: number | null = null;
