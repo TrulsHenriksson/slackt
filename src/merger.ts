@@ -140,3 +140,12 @@ export function identify_people(target: Slackt, source: Slackt): [Map<number, nu
     console.log(unsure_pairs)
     return [pairs, unsure_pairs]
 }
+
+export function merge(target: Slackt, source: Slackt) {
+    let [pairs, unsure_pairs] = identify_people(target, source)
+    let is_new = new Map(source.people.map((p) => [p.id, true]))
+    for (const [target_id, source_id] of pairs) {
+        is_new.set(source_id, false)
+    }
+    
+}

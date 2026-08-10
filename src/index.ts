@@ -21,7 +21,6 @@ const openButton = document.getElementById('open')!;
 const openMergeButton = document.getElementById('openMerge')!;
 const saveButton = document.getElementById('save')!;
 const clearButton = document.getElementById('clear')!;
-const analyseButton = document.getElementById('analyse')!;
 const searchPeople = document.getElementById('searchPeople')!;
 const searchFamilies = document.getElementById('searchFamilies')!;
 const clearSearchPeople = document.getElementById('clearSearchPeople')!;
@@ -38,7 +37,6 @@ const addFamily = document.getElementById('addFamily')!;
     saveButton,
     clearButton,
     openMergeButton,
-    analyseButton,
     searchPeople,
     searchFamilies,
     clearSearchPeople,
@@ -92,26 +90,6 @@ clearButton.onclick = () => {
         alert("Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.")
     }
     timeStampLastClickedClear = Date.now()
-};
-
-analyseButton.onclick = () => {
-    let networks: Set<number>[] = [];
-    for (let i = 0; i < openedFile.people.length; i++) {
-        if (networks.some((n) => n.has(openedFile.people[i].id))) continue;
-
-        let p = openedFile.people[i];
-        let network = analysePerson(p, new Set<number>());
-        networks.push(network);
-    }
-
-    console.log(
-        'Networks:',
-        networks.map((set) =>
-            FindPeople(openedFile, Array.from(set)).map((p) =>
-                FormatName(p, 'full'),
-            ),
-        ),
-    );
 };
 
 function analysePerson(p: Person, counted: Set<number>) {
