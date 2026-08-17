@@ -375,8 +375,10 @@ function refreshFamilyInspector() {
         let arrowsEl = document.createElement('div');
         arrowsEl.classList.add('arrows');
         let up = document.createElement('button');
+        up.onclick = () => moveChild(c, -1)
         up.innerHTML = '🔼';
         let down = document.createElement('button');
+        down.onclick = () => moveChild(c, 1)
         down.innerHTML = '🔽';
         arrowsEl.append(up);
         arrowsEl.append(down);
@@ -424,6 +426,29 @@ function refreshFamilyInspector() {
     });
 
     familyInspector.append(formEl);
+}
+
+/** Move a child up or down in the family inspector according to step */
+function moveChild(id: number, step: number) {
+    if (selectedFamily === null)
+        return
+
+    let children = openedFile.getFamily(selectedFamily).children
+    let i = children.findIndex((c) => c === id)
+    if (i === -1)
+        return  // No child with id `id`
+
+    // Clamp j to be between 0 and length-1
+    let j = Math.min(children.length - 1, Math.max(0, i + step))
+    if (j === i)
+        return  // Move nowhere
+
+    // Swap indices i and j
+    let temp = children[i]
+    children[i] = children[j]
+    children[j] = temp
+    refreshFamilyList()
+    refreshFamilyInspector()
 }
 
 function select(e: MouseEvent) {
