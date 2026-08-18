@@ -28,6 +28,7 @@ const clearButton = document.getElementById('clear')!;
 const listNetworkButton = document.getElementById('listNetwork')!;
 //const listFamilyButton = document.getElementById('listFamily')!;
 const databaseButton = document.getElementById('database')!;
+const commentField = document.getElementById('comment') as HTMLInputElement;
 const personSelectEl = document.getElementById(
     'selectPerson',
 ) as HTMLSelectElement;
@@ -40,6 +41,7 @@ const mainArea = document.getElementById('viewer')!;
     listNetworkButton,
     //listFamilyButton,
     databaseButton,
+    commentField,
     personSelectEl,
     mainArea,
 ].forEach((element) => {
@@ -144,7 +146,11 @@ personSelectEl.onchange = (e) => {
 databaseButton.onclick = async () => {
     let data = await supabase
         .from('Trees')
-        .insert({ data: openedFile.stringify() })
+        .insert({
+            data: openedFile.stringify(),
+            comment: commentField.value,
+            by_user: (await supabase.auth.getSession()).data.session?.user.id,
+        })
         .select();
     console.log(data);
 };

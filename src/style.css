@@ -34,6 +34,10 @@ header {
     align-items: baseline;
 }
 
+#userInfo {
+    font-family: monospace;
+}
+
 #menuButtons {
     border-bottom: 2px #084 solid;
 }
