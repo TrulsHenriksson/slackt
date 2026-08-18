@@ -6,6 +6,7 @@ import {
     FindDirectRelatives,
     Person,
 } from './typesnmethods.js';
+import { supabase } from './supabase.js';
 
 function refresh() {
     personSelectEl.innerHTML =
@@ -26,6 +27,7 @@ const saveButton = document.getElementById('save')!;
 const clearButton = document.getElementById('clear')!;
 const listNetworkButton = document.getElementById('listNetwork')!;
 //const listFamilyButton = document.getElementById('listFamily')!;
+const databaseButton = document.getElementById('database')!;
 const personSelectEl = document.getElementById(
     'selectPerson',
 ) as HTMLSelectElement;
@@ -37,6 +39,7 @@ const mainArea = document.getElementById('viewer')!;
     clearButton,
     listNetworkButton,
     //listFamilyButton,
+    databaseButton,
     personSelectEl,
     mainArea,
 ].forEach((element) => {
@@ -136,6 +139,14 @@ personSelectEl.onchange = (e) => {
     selectedPerson = parseInt(target.value);
     localStorage.setItem('selectedPerson', target.value);
     refresh();
+};
+
+databaseButton.onclick = async () => {
+    let data = await supabase
+        .from('Trees')
+        .insert({ data: openedFile.stringify() })
+        .select();
+    console.log(data);
 };
 
 let openedFile = new Slackt();

@@ -1,9 +1,13 @@
 {
     "dependencies": {
-        "typescript": "^5.7.2"
+        "@supabase/supabase-js": "^2.112.3"
     },
     "scripts": {
-        "build": "tsc",
-        "dev": "tsc -w"
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "typescript": "^7.0.2",
+        "vite": "^8.2.1"
     }
 }

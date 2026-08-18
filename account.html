@@ -4,14 +4,14 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="./src/style.css" />
-        <script type="module" src="./src/viewer.ts"></script>
+        <script type="module" src="./src/account.ts"></script>
         <title>Slackt - Fyrgeit.se</title>
     </head>
     <body>
         <header>
             <h1>Slackt</h1>
             <h2><a href="index.html">Redigerare</a></h2>
-            <h2>Utforskare</h2>
+            <h2><a href="viewer.html">Utforskare</a></h2>
             <h2><a href="tools.html">Verktyg</a></h2>
             <p>Tillbaka till <a href="https://fyrgeit.se">Fyrgeit.se</a></p>
         </header>
@@ -27,11 +27,15 @@
             <button class="textButton" id="save">Spara</button>
             <button class="textButton" id="clear">Rensa</button>
         </div>
-
-        <main class="grow">
-            <label for="selectFamily">Välj familj</label>
-            <select id="selectFamily"></select>
-            <div id="viewer" class="vcont grow"></div>
-        </main>
+        <form id="signupForm">
+            <input type="text" name="email" placeholder="Email" />
+            <input type="password" name="password" placeholder="Password" />
+            <button type="submit" id="signup">Sign up</button>
+        </form>
+        <form id="loginForm">
+            <input type="text" name="email" placeholder="Email" />
+            <input type="password" name="password" placeholder="Password" />
+            <button type="submit" id="login">Log in</button>
+        </form>
     </body>
 </html>
