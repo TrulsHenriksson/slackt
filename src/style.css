@@ -147,6 +147,10 @@ form {
     flex-grow: 1;
 }
 
+.span {
+    grid-column-end: span 2;
+}
+
 .infoBox {
     background-color: #eee;
     padding: 0.5rem 0;

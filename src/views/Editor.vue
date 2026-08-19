@@ -78,6 +78,8 @@ watch(selectedFamilyId, (newVal) => {
 });
 
 async function scrollToPerson(id: number | null) {
+    if (id === null) return;
+
     await nextTick();
 
     document.querySelector(`#people [data-id="${id}"]`)?.scrollIntoView({
@@ -87,12 +89,56 @@ async function scrollToPerson(id: number | null) {
 }
 
 async function scrollToFamily(id: number | null) {
+    if (id === null) return;
+
     await nextTick();
 
-    document.querySelector(`#families [data-id="${id}"]`)?.scrollIntoView({
+    const el = document.querySelector(`#families [data-id="${id}"]`);
+
+    el?.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
     });
+}
+
+async function addPerson() {
+    const newId = openedFile.value.addEmptyPerson();
+
+    selectedPersonId.value = newId;
+
+    scrollToPerson(newId);
+}
+
+async function addFamily() {
+    const newId = openedFile.value.addEmptyFamily();
+
+    selectedFamilyId.value = newId;
+
+    scrollToFamily(newId);
+}
+
+function deletePerson(personId: number) {
+    const i = openedFile.value.people.findIndex((f) => f.id === personId);
+
+    openedFile.value.people.splice(i, 1);
+
+    selectedPersonId.value = openedFile.value.people[i - 1]?.id ?? null;
+
+    // Purge references
+    openedFile.value.families.forEach((f) => {
+        if (f.husband === personId) f.husband = null;
+        if (f.wife === personId) f.wife = null;
+        if (f.children.includes(personId))
+            f.children = f.children.filter((c) => c !== personId);
+    });
+}
+
+function deleteFamily(familyId: number) {
+    const i = openedFile.value.families.findIndex((f) => f.id === familyId);
+
+    openedFile.value.families.splice(i, 1);
+
+    selectedFamilyId.value = openedFile.value.families[i - 1]?.id ?? null;
 }
 
 function moveChild(id: number, step: number) {
@@ -122,26 +168,6 @@ function moveChild(id: number, step: number) {
 
     return counted;
 }
-
-addPerson.onclick = () => {
-    selectedPerson = openedFile.addEmptyPerson();
-    refreshPersonInspector();
-    refreshPersonList();
-    let p = peopleSection.querySelector(
-        `[data-id="${selectedPerson}"]`,
-    ) as HTMLElement;
-    p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-};
-addFamily.onclick = () => {
-    selectedFamily = openedFile.addEmptyFamily();
-    refreshFamilyInspector();
-    refreshFamilyList();
-    let f = familiesSection.querySelector(
-        `[data-id="${selectedFamily}"]`,
-    ) as HTMLElement;
-    f?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-};
-
 */
 </script>
 
@@ -172,14 +198,20 @@ addFamily.onclick = () => {
                     :class="{ selected: selectedPersonId === p.id }"
                     :data-id="p.id"
                     @click="
-                        selectedPersonId = p.id;
-                        scrollToPerson(p.id);
+                        if (selectedPersonId === p.id) {
+                            selectedPersonId = null;
+                        } else {
+                            selectedPersonId = p.id;
+                            scrollToPerson(p.id);
+                        }
                     "
                 >
                     {{ p.formatName('extra') }}
                 </p>
             </div>
-            <button class="textButton" id="addPerson">Lägg till person</button>
+            <button class="textButton" @click="addPerson">
+                Lägg till person
+            </button>
         </div>
         <div id="families">
             <h1>Familjer</h1>
@@ -206,24 +238,33 @@ addFamily.onclick = () => {
                     :class="{ selected: selectedFamilyId === f.id }"
                     :data-id="f.id"
                     @click="
-                        selectedFamilyId = f.id;
-                        scrollToFamily(f.id);
+                        if (selectedFamilyId === f.id) {
+                            selectedFamilyId = null;
+                        } else {
+                            selectedFamilyId = f.id;
+                            scrollToFamily(f.id);
+                        }
                     "
                 >
                     {{ f.formatFamily(openedFile) }}
                 </p>
             </div>
-            <button class="textButton" id="addFamily">Lägg till familj</button>
+            <button class="textButton" @click="addFamily">
+                Lägg till familj
+            </button>
         </div>
         <div id="inspector">
             <div>
                 <h2>Person</h2>
                 <div id="person">
-                    <div v-if="selectedPerson === null">no selected</div>
+                    <div v-if="selectedPerson === null">Ingen vald</div>
                     <form v-else>
-                        <p style="grid-column-end: span 2">
-                            #{{ selectedPerson.id }}
-                        </p>
+                        <div class="hcont span">
+                            <p class="grow">#{{ selectedPerson.id }}</p>
+                            <button @click="deletePerson(selectedPerson.id)">
+                                🗑️
+                            </button>
+                        </div>
                         <label for="nameFirst">Förnamn</label>
                         <input
                             type="text"
@@ -260,11 +301,14 @@ addFamily.onclick = () => {
             <div>
                 <h2>Familj</h2>
                 <div id="family">
-                    <div v-if="selectedFamily === null">no selected</div>
+                    <div v-if="selectedFamily === null">Ingen vald</div>
                     <form v-else>
-                        <p style="grid-column-end: span 2">
-                            #{{ selectedFamily.id }}
-                        </p>
+                        <div class="hcont span">
+                            <p class="grow">#{{ selectedFamily.id }}</p>
+                            <button @click="deleteFamily(selectedFamily.id)">
+                                🗑️
+                            </button>
+                        </div>
                         <label>Make</label>
                         <div class="hcont">
                             <p class="grow">

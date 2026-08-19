@@ -122,14 +122,19 @@ export class Slackt {
     }
 
     addEmptyPerson(): PersonId {
-        let newId: PersonId = this.people.length;
+        let newId: PersonId = this.people[this.people.length - 1].id + 1;
         this.people.push(new Person(newId));
         return newId;
     }
 
     addEmptyFamily(): FamilyId {
-        let newId: FamilyId = this.families.length;
+        const newId: FamilyId =
+            this.families.length > 0
+                ? this.families[this.families.length - 1].id + 1
+                : 0;
+
         this.families.push(new Family(newId));
+
         return newId;
     }
 
@@ -236,23 +241,23 @@ export function download(openedFile: Slackt) {
     el.click();
 }
 
-export async function open(e: Event, openedFile: Slackt) {
+export async function open(e: Event) {
     if (e.target instanceof HTMLInputElement) {
         const file = e.target.files?.item(0);
         const text = await file?.text();
         if (!file || !text) {
-            console.error('äawh');
-            return null;
+            throw new Error('äawh');
         }
+        let openedFile: Slackt | null = null;
         try {
             openedFile = Slackt.fromString(text);
         } catch (error) {
-            console.error('Fel på filen', error);
+            throw new Error('Fel på filen: ' + error);
         }
 
         if (openedFile) {
-            localStorage.setItem('openedFile', openedFile.stringify());
             return openedFile;
         }
     }
+    throw new Error('fel');
 }

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { Slackt, download } from './typesnmethods';
+import { Slackt, download, open } from './typesnmethods';
+import { ref } from 'vue';
 
 const openedFile = defineModel<Slackt>({
     default: () => new Slackt(),
 });
 
-/* openButton.addEventListener('change', async (e) => {
-    openedFile = (await open(e, openedFile)) || openedFile;
-    refreshPersonList();
-    refreshFamilyList();
-});
-*/
+const fileInput = ref<HTMLInputElement | null>(null);
+
+async function openFile(e: Event) {
+    openedFile.value = await open(e);
+}
 
 let timeStampLastClickedClear = 0;
 function clear() {
@@ -18,9 +18,6 @@ function clear() {
     if (Date.now() - timeStampLastClickedClear < 2000) {
         openedFile.value = new Slackt();
         localStorage.setItem('openedFile', openedFile.value.stringify());
-
-        //selectedPerson = null;
-        //selectedFamily = null;
     } else {
         alert(
             'Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.',
@@ -39,15 +36,16 @@ function clear() {
         <p>Tillbaka till <a href="https://fyrgeit.se">Fyrgeit.se</a></p>
     </header>
     <div id="menuButtons">
-        <button
-            class="textButton"
-            onclick="document.getElementById('open').click()"
-        >
-            Öppna
-        </button>
-        <input type="file" id="open" accept=".json" style="display: none" />
+        <button class="textButton" @click="fileInput?.click()">Öppna</button>
+        <input
+            @change="openFile"
+            ref="fileInput"
+            type="file"
+            accept=".json"
+            hidden
+        />
         <button @click="download(openedFile)" class="textButton">Spara</button>
-        <button @clock="clear" class="textButton">Rensa</button>
+        <button @click="clear" class="textButton">Rensa</button>
     </div>
 </template>
 
