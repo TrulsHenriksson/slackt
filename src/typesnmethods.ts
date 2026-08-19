@@ -1,6 +1,6 @@
 // Aliases so they don't get mixed up with normal numbers
-type PersonId = number
-type FamilyId = number
+type PersonId = number;
+type FamilyId = number;
 
 interface IPerson {
     id: PersonId;
@@ -33,29 +33,26 @@ export class Person {
         nameLast: string = '',
         nameLastMaiden: string = '',
         dateBirth: string = '',
-        dateDeath: string = ''
+        dateDeath: string = '',
     ) {
-        this.id = id
-        this.nameFirst = nameFirst
-        this.nameLast = nameLast
-        this.nameLastMaiden = nameLastMaiden
-        this.dateBirth = dateBirth
-        this.dateDeath = dateDeath
+        this.id = id;
+        this.nameFirst = nameFirst;
+        this.nameLast = nameLast;
+        this.nameLastMaiden = nameLastMaiden;
+        this.dateBirth = dateBirth;
+        this.dateDeath = dateDeath;
     }
 
     formatName(type: 'short' | 'full' | 'extra' = 'short') {
-        if (type === 'short')
-            return this.nameFirst;
+        if (type === 'short') return this.nameFirst;
 
         let full = `${this.nameFirst} ${this.nameLast}${
             this.nameLastMaiden ? ` (f. ${this.nameLastMaiden})` : ''
         }`;
 
-        if (type === 'full')
-            return full;
+        if (type === 'full') return full;
 
-        if (type === 'extra')
-            return `#${this.id} ${full}`;
+        if (type === 'extra') return `#${this.id} ${full}`;
 
         return '';
     }
@@ -65,9 +62,9 @@ export class Person {
     }
 
     static fromObject(obj: IPerson): Person {
-        return Object.assign(new Person(obj.id), obj)
+        return Object.assign(new Person(obj.id), obj);
     }
-};
+}
 
 export class Family {
     id: FamilyId;
@@ -85,12 +82,12 @@ export class Family {
         nameLastOverride: string = '',
         dateStart: string = '',
     ) {
-        this.id = id
-        this.husband = husband
-        this.wife = wife
-        this.children = children
-        this.nameLastOverride = nameLastOverride
-        this.dateStart = dateStart
+        this.id = id;
+        this.husband = husband;
+        this.wife = wife;
+        this.children = children;
+        this.nameLastOverride = nameLastOverride;
+        this.dateStart = dateStart;
     }
 
     /** Format the family string using the given Slackt file. */
@@ -99,7 +96,9 @@ export class Family {
         let wife = this.wife !== null ? s.findPerson(this.wife) : null;
         let husbandName = husband ? husband.formatName() : null;
         let wifeName = wife ? wife.formatName() : null;
-        let childrenNames = this.children.map((c) => s.findPerson(c)?.formatName());
+        let childrenNames = this.children.map((c) =>
+            s.findPerson(c)?.formatName(),
+        );
 
         return `#${this.id} (${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
     }
@@ -109,64 +108,69 @@ export class Family {
     }
 
     static fromObject(obj: IFamily): Family {
-        return Object.assign(new Family(obj.id), obj)
+        return Object.assign(new Family(obj.id), obj);
     }
-};
+}
 
 export class Slackt {
-    people: Person[]
-    families: Family[]
+    people: Person[];
+    families: Family[];
 
     constructor(people: Person[] = [], families: Family[] = []) {
-        this.people = people
-        this.families = families
+        this.people = people;
+        this.families = families;
     }
 
     addEmptyPerson(): PersonId {
-        let newId: PersonId = this.people.length
-        this.people.push(new Person(newId))
-        return newId
+        let newId: PersonId = this.people.length;
+        this.people.push(new Person(newId));
+        return newId;
     }
 
     addEmptyFamily(): FamilyId {
-        let newId: FamilyId = this.families.length
-        this.families.push(new Family(newId))
-        return newId
+        let newId: FamilyId = this.families.length;
+        this.families.push(new Family(newId));
+        return newId;
     }
 
     /** Return the person with the given id, or undefined. */
     findPerson(id: PersonId): Person | undefined {
-        return this.people.find((p) => p.id === id)
+        return this.people.find((p) => p.id === id);
     }
 
     /** Get a person, and throw an error if it does not exist. */
     getPerson(id: PersonId): Person {
-        let p = this.findPerson(id)
-        if (p === undefined)
-            throw new Error(`Person ${id} does not exist`)
-        return p
+        let p = this.findPerson(id);
+        if (p === undefined) throw new Error(`Person ${id} does not exist`);
+        return p;
     }
 
     /** Return the family with the given id, or undefined. */
     findFamily(id: FamilyId): Family | undefined {
-        return this.families.find((f) => f.id === id)
+        return this.families.find((f) => f.id === id);
     }
 
     /** Get a family, and throw an error if it does not exist. */
     getFamily(id: FamilyId): Family {
-        let p = this.findFamily(id)
-        if (p === undefined)
-            throw new Error(`Family ${id} does not exist`)
-        return p
+        let p = this.findFamily(id);
+        if (p === undefined) throw new Error(`Family ${id} does not exist`);
+        return p;
     }
 
-    addPersonToFamily(familyId: FamilyId, personId: PersonId, role: 'husband' | 'wife' | 'child') {
-        let family = this.getFamily(familyId)
+    addPersonToFamily(
+        familyId: FamilyId,
+        personId: PersonId,
+        role: 'husband' | 'wife' | 'child',
+    ) {
+        let family = this.getFamily(familyId);
 
         switch (role) {
-            case "husband": family.husband = personId
-            case "wife": family.husband = personId
-            case "child": family.children.push(personId)
+            case 'husband':
+                family.husband = personId;
+            case 'wife':
+                family.husband = personId;
+            case 'child':
+                family.children.push(personId);
         }
     }
 
@@ -174,25 +178,24 @@ export class Slackt {
         return {
             people: this.people.map((p) => p.asObject()),
             families: this.families.map((f) => f.asObject()),
-        }
+        };
     }
 
-    static fromObject(obj: {people: IPerson[], families: IFamily[]}) {
+    static fromObject(obj: { people: IPerson[]; families: IFamily[] }) {
         return new Slackt(
             obj.people.map((p) => Person.fromObject(p)),
-            obj.families.map((f) => Family.fromObject(f))
-        )
+            obj.families.map((f) => Family.fromObject(f)),
+        );
     }
 
     stringify(): string {
-        return JSON.stringify(this.asObject())
+        return JSON.stringify(this.asObject());
     }
 
     static fromString(str: string): Slackt {
-        return Slackt.fromObject(JSON.parse(str))
+        return Slackt.fromObject(JSON.parse(str));
     }
 }
-
 
 export function FindDirectRelatives(s: Slackt, personId: number) {
     let families = s.families.filter(
@@ -208,8 +211,6 @@ export function FindDirectRelatives(s: Slackt, personId: number) {
     );
     return allFamilyMembers.filter((id) => id !== personId);
 }
-
-
 
 export function download(openedFile: Slackt) {
     const blob = new Blob([openedFile.stringify()], {
@@ -254,10 +255,4 @@ export async function open(e: Event, openedFile: Slackt) {
             return openedFile;
         }
     }
-}
-
-export function clear() {
-    let newFile = new Slackt();
-    localStorage.setItem('openedFile', newFile.stringify());
-    return newFile;
 }
