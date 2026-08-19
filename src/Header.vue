@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { Slackt, download, open } from './typesnmethods';
 import { ref } from 'vue';
+import { supabase } from './supabase';
 
 const openedFile = defineModel<Slackt>({
     default: () => new Slackt(),
 });
 
 const fileInput = ref<HTMLInputElement | null>(null);
+
+const commentField = ref('');
 
 async function openFile(e: Event) {
     openedFile.value = await open(e);
@@ -25,6 +28,19 @@ function clear() {
     }
     timeStampLastClickedClear = Date.now();
 }
+
+async function upload() {
+    let data = await supabase
+        .from('Trees')
+        .insert({
+            data: openedFile.value.stringify(),
+            comment: commentField.value,
+            by_user: (await supabase.auth.getSession()).data.session?.user.id,
+        })
+        .select();
+    commentField.value = '';
+    console.log(data);
+}
 </script>
 
 <template>
@@ -35,7 +51,7 @@ function clear() {
         <h2><RouterLink to="/tools">Verktyg</RouterLink></h2>
         <p>Tillbaka till <a href="https://fyrgeit.se">Fyrgeit.se</a></p>
     </header>
-    <div id="menuButtons">
+    <div id="menuButtons" class="hcont">
         <button class="textButton" @click="fileInput?.click()">Öppna</button>
         <input
             @change="openFile"
@@ -46,6 +62,8 @@ function clear() {
         />
         <button @click="download(openedFile)" class="textButton">Spara</button>
         <button @click="clear" class="textButton">Rensa</button>
+        <button @click="upload" class="textButton">Ladda upp</button>
+        <input v-model="commentField" type="text" placeholder="Meddelande..." />
     </div>
 </template>
 

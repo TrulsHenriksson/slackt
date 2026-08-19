@@ -2,7 +2,6 @@ import {
     Slackt,
     open,
     download,
-    clear,
     FindDirectRelatives,
     Person,
 } from './typesnmethods.js';
@@ -47,16 +46,6 @@ const mainArea = document.getElementById('viewer')!;
 ].forEach((element) => {
     if (!element) throw new Error();
 });
-
-openButton.addEventListener('change', async (e) => {
-    openedFile = (await open(e, openedFile)) || openedFile;
-    refresh();
-});
-saveButton.onclick = () => download(openedFile);
-clearButton.onclick = () => {
-    openedFile = clear();
-    refresh();
-};
 
 listNetworkButton.onclick = () => {
     let networksSet: Set<number>[] = [];
