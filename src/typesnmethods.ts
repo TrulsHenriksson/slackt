@@ -1,9 +1,10 @@
 // Aliases so they don't get mixed up with normal numbers
-type PersonId = number
-type FamilyId = number
+export type PersonId = number
+export type FamilyId = number
 
 interface IPerson {
     id: PersonId;
+    /** The first name of the person. Must not be empty. */
     nameFirst: string;
     /** The last name the person currently has, or had last. Empty signifies unknown. */
     nameLast: string;
@@ -25,7 +26,7 @@ interface IFamily {
 }
 
 export class Person {
-    id: PersonId;
+    readonly id: PersonId;
     nameFirst: string;
     nameLast: string;
     nameLastMaiden: string;
@@ -52,9 +53,11 @@ export class Person {
         if (type === 'short')
             return this.nameFirst;
 
-        let full = `${this.nameFirst} ${this.nameLast}${
-            this.nameLastMaiden ? ` (f. ${this.nameLastMaiden})` : ''
-        }`;
+        let full = `${this.nameFirst}`
+        if (this.nameLast !== "")
+            full += " " + this.nameLast
+        if (this.nameLastMaiden !== "")
+            full += ` (f. ${this.nameLastMaiden})`
 
         if (type === 'full')
             return full;
@@ -65,17 +68,37 @@ export class Person {
         return '';
     }
 
-    asObject() {
+    updateFrom(other: Person){
+        if (this.nameFirst !== other.nameFirst) {
+            throw new Error("Cannot merge people with differing first names")
+        }
+        // Take names from `other` if `this` doesn't have them
+        if (this.nameLast === "") 
+            this.nameLast = other.nameLast
+        if (this.nameLastMaiden === "")
+            this.nameLastMaiden = other.nameLastMaiden
+        // Take whichever date is more specific
+        if (this.dateBirth.length < other.dateBirth.length)
+            this.dateBirth = other.dateBirth
+        if (this.dateDeath.length < other.dateDeath.length)
+            this.dateDeath = other.dateDeath
+    }
+
+    asObject(): IPerson {
         return Object.assign({}, this);
     }
 
     static fromObject(obj: IPerson): Person {
         return Object.assign(new Person(obj.id), obj)
     }
+
+    copy(): Person {
+        return Object.assign(new Person(this.id), this)
+    }
 };
 
 export class Family {
-    id: FamilyId;
+    readonly id: FamilyId;
     husband: PersonId | null;
     wife: PersonId | null;
     children: PersonId[];
@@ -109,34 +132,80 @@ export class Family {
         return `#${this.id} (${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
     }
 
-    asObject() {
+    updateFrom(other: Family) {
+        if (this.husband === null)
+            this.husband = other.husband
+        if (this.wife === null)
+            this.wife = other.wife
+        // Deduplicate the combined children
+        this.children = [...new Set(this.children.concat(other.children))]
+        if (this.nameLastOverride === "")
+            this.nameLastOverride = other.nameLastOverride
+        // Take whichever date is more specific (assuming YYYY[-MM[-DD]] format)
+        if (this.dateStart.length < other.dateStart.length)
+            this.dateStart = other.dateStart
+    }
+
+    asObject(): IFamily {
         return Object.assign({}, this);
     }
 
     static fromObject(obj: IFamily): Family {
         return Object.assign(new Family(obj.id), obj)
     }
+
+    copy(): Family {
+        return Object.assign(new Family(this.id), this)
+    }
 };
 
+
+/** Append value to a key's array if the key exists, otherwise insert [value]. */
+export function map_append<K, V>(m: Map<K, V[]>, key: K, value: V) {
+    if (m.has(key)) {
+        m.get(key)!.push(value)
+    } else {
+        m.set(key, [value])
+    }
+}
+
+
 export class Slackt {
-    people: Person[]
-    families: Family[]
+    readonly people: Person[]
+    readonly families: Family[]
+    /** Map from a person to the families they are a parent of. */
+    private familyMap: Map<PersonId, FamilyId[]>
+    /** Map from a person to their parents, [husband, wife]. */
+    private parentMap: Map<PersonId, [PersonId | null, PersonId | null]>
 
     constructor(people: Person[] = [], families: Family[] = []) {
         this.people = people
         this.families = families
+
+        // Initialize the family and parent maps
+        this.familyMap = new Map()
+        this.parentMap = new Map()
+        for (const family of this.families) {
+            if (family.husband !== null)
+                map_append(this.familyMap, family.husband, family.id)
+            if (family.wife !== null)
+                map_append(this.familyMap, family.wife, family.id)
+            for (const childId of family.children) {
+                this.parentMap.set(childId, [family.husband, family.wife])
+            }
+        }
     }
 
-    addEmptyPerson(): PersonId {
-        let newId: PersonId = this.people.length
-        this.people.push(new Person(newId))
-        return newId
+    addEmptyPerson(): Person {
+        let newPerson = new Person(this.people.length);
+        this.people.push(newPerson)
+        return newPerson
     }
 
-    addEmptyFamily(): FamilyId {
-        let newId: FamilyId = this.families.length
-        this.families.push(new Family(newId))
-        return newId
+    addEmptyFamily(): Family {
+        let newFamily = new Family(this.families.length);
+        this.families.push(newFamily)
+        return newFamily
     }
 
     /** Return the person with the given id, or undefined. */
@@ -168,11 +237,47 @@ export class Slackt {
     addPersonToFamily(familyId: FamilyId, personId: PersonId, role: 'husband' | 'wife' | 'child') {
         let family = this.getFamily(familyId)
 
-        switch (role) {
-            case "husband": family.husband = personId
-            case "wife": family.husband = personId
-            case "child": family.children.push(personId)
+        if (role === "child") {
+            family.children.push(personId)
+            this.parentMap.set(personId, [family.husband, family.wife])
+            return
         }
+
+        if (role === "husband") {
+            if (family.husband !== null)
+                throw new Error(`Family ${familyId} already had a husband.`)
+            family.husband = personId
+            map_append(this.familyMap, family.husband, familyId)
+        } else {   
+            if (family.wife !== null)
+                throw new Error(`Family ${familyId} already had a wife.`)
+            family.wife = personId
+            map_append(this.familyMap, family.wife, familyId)
+        }
+
+        // Update the children's parents
+        for (const childId of family.children) {
+            this.parentMap.set(childId, [family.husband, family.wife])
+        }
+    }
+
+    getFamiliesFromParent(personId: PersonId): Family[] {
+        return (this.familyMap.get(personId) ?? []).map(this.getFamily)
+    }
+
+    getChildrenFromParent(personId: PersonId): Person[] {
+        return this.getFamiliesFromParent(personId).flatMap((f) => f.children.map(this.getPerson))
+    }
+
+    getParentsFromChild(personId: PersonId): [Person | undefined, Person | undefined] {
+        if (!this.parentMap.has(personId)) {
+            return [undefined, undefined]
+        }
+        let [fatherId, motherId] = this.parentMap.get(personId)!
+        return [
+            fatherId === null ? undefined : this.getPerson(fatherId),
+            motherId === null ? undefined : this.getPerson(motherId),
+        ]
     }
 
     asObject(): Object {

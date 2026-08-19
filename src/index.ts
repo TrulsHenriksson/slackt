@@ -7,7 +7,11 @@ import {
     open,
     clear,
 } from './typesnmethods.js';
-import {identify_people} from './merger.js'
+import {
+    merged,
+} from './merger.js'
+import { isJSDocUnknownTag } from 'typescript/unstable/ast';
+import { updateDecorator } from 'typescript/unstable/ast/factory';
 
 // Guarantee that none of these are null because we check them below
 const openButton = document.getElementById('open')!;
@@ -27,6 +31,7 @@ const addFamily = document.getElementById('addFamily')!;
 // Make sure all of them exist
 [
     openButton,
+    openMergeButton,
     saveButton,
     clearButton,
     searchPeople,
@@ -49,20 +54,19 @@ openButton.addEventListener('change', async (e) => {
     refreshFamilyList();
 });
 openMergeButton.addEventListener('change', async (e) => {
-    // openedFile = (await open(e, openedFile)) || openedFile?
     if (e.target instanceof HTMLInputElement) {
         const file = e.target.files?.item(0)
         const text = await file?.text()
-        if (!file || !text) {
+        if (!file || text === undefined) {
             return
         }
-        let newFile = new Slackt()
-        try {
-            newFile = JSON.parse(text)
-        } catch (error) {
-            return
+        let newFile = Slackt.fromString(text)
+        let mergedFile = merged(openedFile, newFile)
+        if (mergedFile !== undefined) {
+            openedFile = mergedFile
+            refreshPersonList()
+            refreshFamilyList()
         }
-        identify_people(openedFile, newFile)
     }
 })
 saveButton.onclick = () => download(openedFile);
@@ -116,7 +120,7 @@ clearSearchFamilies.onclick = () => {
 };
 
 addPerson.onclick = () => {
-    selectedPerson = openedFile.addEmptyPerson();
+    selectedPerson = openedFile.addEmptyPerson().id;
     refreshPersonInspector();
     refreshPersonList();
     let p = peopleSection.querySelector(
@@ -125,7 +129,7 @@ addPerson.onclick = () => {
     p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 addFamily.onclick = () => {
-    selectedFamily = openedFile.addEmptyFamily();
+    selectedFamily = openedFile.addEmptyFamily().id;
     refreshFamilyInspector();
     refreshFamilyList();
     let f = familiesSection.querySelector(
@@ -306,7 +310,7 @@ function refreshFamilyInspector() {
 
     let husbandEl = document.createElement('p');
     husbandEl.classList.add('grow');
-    husbandEl.innerHTML = family.husband
+    husbandEl.innerHTML = family.husband !== null
         ? openedFile.getPerson(family.husband).formatName('full')
         : '?';
     husbandContainer.append(husbandEl);
@@ -344,7 +348,7 @@ function refreshFamilyInspector() {
 
     let wifeEl = document.createElement('p');
     wifeEl.classList.add('grow');
-    wifeEl.innerHTML = family.wife
+    wifeEl.innerHTML = family.wife !== null
         ? openedFile.getPerson(family.wife).formatName('full')
         : '?';
     wifeContainer.append(wifeEl);
