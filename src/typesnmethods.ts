@@ -134,7 +134,7 @@ export class Slackt {
     }
 
     /** Return the person with the given id, or undefined. */
-    findPerson(id: PersonId): Person | undefined {
+    findPerson(id: PersonId | null): Person | undefined {
         return this.people.find((p) => p.id === id);
     }
 
@@ -146,7 +146,7 @@ export class Slackt {
     }
 
     /** Return the family with the given id, or undefined. */
-    findFamily(id: FamilyId): Family | undefined {
+    findFamily(id: FamilyId | null): Family | undefined {
         return this.families.find((f) => f.id === id);
     }
 
@@ -159,7 +159,7 @@ export class Slackt {
 
     addPersonToFamily(
         familyId: FamilyId,
-        personId: PersonId,
+        personId: PersonId | null,
         role: 'husband' | 'wife' | 'child',
     ) {
         let family = this.getFamily(familyId);
@@ -170,7 +170,7 @@ export class Slackt {
             case 'wife':
                 family.husband = personId;
             case 'child':
-                family.children.push(personId);
+                if (personId !== null) family.children.push(personId);
         }
     }
 
