@@ -69,10 +69,9 @@ export class Person {
     }
 
     updateFrom(other: Person){
-        if (this.nameFirst !== other.nameFirst) {
-            throw new Error("Cannot merge people with differing first names")
-        }
         // Take names from `other` if `this` doesn't have them
+        if (this.nameFirst === "")
+            this.nameFirst = other.nameFirst
         if (this.nameLast === "") 
             this.nameLast = other.nameLast
         if (this.nameLastMaiden === "")
