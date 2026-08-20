@@ -65,7 +65,9 @@ openMergeButton.addEventListener('change', async (e) => {
         if (mergedFile !== undefined) {
             openedFile = mergedFile
             refreshPersonList()
+            refreshPersonInspector()
             refreshFamilyList()
+            refreshFamilyInspector()
         }
     }
 })
