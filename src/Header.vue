@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Slackt, download, open } from './typesnmethods';
+import { Tree, download as downloadFile, open } from './typesnmethods';
 import { ref } from 'vue';
 import { supabase } from './supabase';
 
-const openedFile = defineModel<Slackt>({
-    default: () => new Slackt(),
+const workingTree = defineModel<Tree>({
+    required: true,
 });
 
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -12,15 +12,14 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const commentField = ref('');
 
 async function openFile(e: Event) {
-    openedFile.value = await open(e);
+    workingTree.value = await open(e);
 }
 
 let timeStampLastClickedClear = 0;
 function clear() {
     // Click twice within 2 seconds to clear
     if (Date.now() - timeStampLastClickedClear < 2000) {
-        openedFile.value = new Slackt();
-        localStorage.setItem('openedFile', openedFile.value.stringify());
+        workingTree.value = new Tree();
     } else {
         alert(
             'Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.',
@@ -33,7 +32,7 @@ async function upload() {
     let data = await supabase
         .from('Trees')
         .insert({
-            data: openedFile.value.stringify(),
+            data: workingTree.value.stringify(),
             comment: commentField.value,
             by_user: (await supabase.auth.getSession()).data.session?.user.id,
         })
@@ -60,7 +59,9 @@ async function upload() {
             accept=".json"
             hidden
         />
-        <button @click="download(openedFile)" class="textButton">Spara</button>
+        <button @click="downloadFile(workingTree)" class="textButton">
+            Spara
+        </button>
         <button @click="clear" class="textButton">Rensa</button>
         <button @click="upload" class="textButton">Ladda upp</button>
         <input v-model="commentField" type="text" placeholder="Meddelande..." />

@@ -1,10 +1,4 @@
-import {
-    Slackt,
-    open,
-    download,
-    clear,
-    Person,
-} from './typesnmethods.js';
+import { Tree, open, download, clear, Person } from './typesnmethods.js';
 
 function refresh() {
     familySelectEl.innerHTML =
@@ -63,7 +57,10 @@ function refresh() {
     }
 }
 
-function infoBox(person: Person | undefined, role: 'husband' | 'wife' | 'child') {
+function infoBox(
+    person: Person | undefined,
+    role: 'husband' | 'wife' | 'child',
+) {
     const roleName = {
         husband: 'Make',
         wife: 'Maka',
@@ -152,10 +149,10 @@ familySelectEl.onchange = (e) => {
 
 const mainArea = document.getElementById('viewer')!;
 
-let openedFile = new Slackt();
+let openedFile = new Tree();
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = Slackt.fromString(fromLS);
+    openedFile = Tree.fromString(fromLS);
 }
 
 let selectedFamily: number | null = null;

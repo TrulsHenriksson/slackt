@@ -1,5 +1,5 @@
 import {
-    Slackt,
+    Tree,
     open,
     download,
     FindDirectRelatives,
@@ -144,10 +144,10 @@ databaseButton.onclick = async () => {
     console.log(data);
 };
 
-let openedFile = new Slackt();
+let openedFile = new Tree();
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = Slackt.fromString(fromLS);
+    openedFile = Tree.fromString(fromLS);
 }
 
 let selectedPerson: number | null = null;

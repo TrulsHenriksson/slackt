@@ -1,32 +1,24 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue';
-import { Slackt } from '../typesnmethods.ts';
+import { Tree } from '../typesnmethods.ts';
 
-const openedFile = defineModel<Slackt>('openedFile', {
+const workingTree = defineModel<Tree>('workingTree', {
     required: true,
 });
 
-const selectedPersonId = defineModel<number | null>('selectedPerson', {
+const selectedPersonId = defineModel<number | null>('selectedPersonId', {
     required: true,
 });
 
-const selectedFamilyId = defineModel<number | null>('selectedFamily', {
+const selectedFamilyId = defineModel<number | null>('selectedFamilyId', {
     required: true,
 });
-
-watch(
-    openedFile,
-    () => {
-        localStorage.setItem('openedFile', openedFile.value.stringify());
-    },
-    { deep: true },
-);
 
 const peopleFilter = ref('');
 const filteredPeople = computed(() => {
-    if (!openedFile.value) return [];
-    if (!peopleFilter.value) return openedFile.value.people;
-    return openedFile.value.people.filter((p) =>
+    if (!workingTree.value) return [];
+    if (!peopleFilter.value) return workingTree.value.people;
+    return workingTree.value.people.filter((p) =>
         p
             .formatName('full')
             .toLowerCase()
@@ -35,46 +27,34 @@ const filteredPeople = computed(() => {
 });
 const selectedPerson = computed(() => {
     if (selectedPersonId.value === null) return null;
-    return openedFile.value.findPerson(selectedPersonId.value) || null;
-});
-watch(selectedPersonId, (newVal) => {
-    localStorage.setItem(
-        'selectedPerson',
-        newVal === null ? '' : newVal.toString(),
-    );
+    return workingTree.value.findPerson(selectedPersonId.value) || null;
 });
 
 const familiesFilter = ref('');
 const filteredFamilies = computed(() => {
-    if (!openedFile.value) return [];
-    if (!familiesFilter.value) return openedFile.value.families;
-    return openedFile.value.families.filter((f) =>
+    if (!workingTree.value) return [];
+    if (!familiesFilter.value) return workingTree.value.families;
+    return workingTree.value.families.filter((f) =>
         f
-            .formatFamily(openedFile.value)
+            .formatFamily(workingTree.value)
             .toLowerCase()
             .includes(familiesFilter.value.toLowerCase()),
     );
 });
 const selectedFamily = computed(() => {
     if (selectedFamilyId.value === null) return null;
-    return openedFile.value.findFamily(selectedFamilyId.value) || null;
+    return workingTree.value.findFamily(selectedFamilyId.value) || null;
 });
 const selectedFamilyMembers = computed(() => {
     return {
-        husband: openedFile.value.findPerson(
+        husband: workingTree.value.findPerson(
             selectedFamily.value?.husband ?? null,
         ),
-        wife: openedFile.value.findPerson(selectedFamily.value?.wife ?? null),
+        wife: workingTree.value.findPerson(selectedFamily.value?.wife ?? null),
         children: (selectedFamily.value?.children ?? [])
-            .map((c) => openedFile.value.findPerson(c))
+            .map((c) => workingTree.value.findPerson(c))
             .filter((c) => c !== undefined),
     };
-});
-watch(selectedFamilyId, (newVal) => {
-    localStorage.setItem(
-        'selectedFamily',
-        newVal === null ? '' : newVal.toString(),
-    );
 });
 
 async function scrollToPerson(id: number | null) {
@@ -102,7 +82,7 @@ async function scrollToFamily(id: number | null) {
 }
 
 async function addPerson() {
-    const newId = openedFile.value.addEmptyPerson();
+    const newId = workingTree.value.addEmptyPerson();
 
     selectedPersonId.value = newId;
 
@@ -110,7 +90,7 @@ async function addPerson() {
 }
 
 async function addFamily() {
-    const newId = openedFile.value.addEmptyFamily();
+    const newId = workingTree.value.addEmptyFamily();
 
     selectedFamilyId.value = newId;
 
@@ -118,14 +98,14 @@ async function addFamily() {
 }
 
 function deletePerson(personId: number) {
-    const i = openedFile.value.people.findIndex((f) => f.id === personId);
+    const i = workingTree.value.people.findIndex((f) => f.id === personId);
 
-    openedFile.value.people.splice(i, 1);
+    workingTree.value.people.splice(i, 1);
 
-    selectedPersonId.value = openedFile.value.people[i - 1]?.id ?? null;
+    selectedPersonId.value = workingTree.value.people[i - 1]?.id ?? null;
 
     // Purge references
-    openedFile.value.families.forEach((f) => {
+    workingTree.value.families.forEach((f) => {
         if (f.husband === personId) f.husband = null;
         if (f.wife === personId) f.wife = null;
         if (f.children.includes(personId))
@@ -134,11 +114,11 @@ function deletePerson(personId: number) {
 }
 
 function deleteFamily(familyId: number) {
-    const i = openedFile.value.families.findIndex((f) => f.id === familyId);
+    const i = workingTree.value.families.findIndex((f) => f.id === familyId);
 
-    openedFile.value.families.splice(i, 1);
+    workingTree.value.families.splice(i, 1);
 
-    selectedFamilyId.value = openedFile.value.families[i - 1]?.id ?? null;
+    selectedFamilyId.value = workingTree.value.families[i - 1]?.id ?? null;
 }
 
 function moveChild(id: number, step: number) {
@@ -246,7 +226,7 @@ function moveChild(id: number, step: number) {
                         }
                     "
                 >
-                    {{ f.formatFamily(openedFile) }}
+                    {{ f.formatFamily(workingTree) }}
                 </p>
             </div>
             <button class="textButton" @click="addFamily">

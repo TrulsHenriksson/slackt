@@ -90,8 +90,8 @@ export class Family {
         this.dateStart = dateStart;
     }
 
-    /** Format the family string using the given Slackt file. */
-    formatFamily(s: Slackt) {
+    /** Format the family string using the given Tree. */
+    formatFamily(s: Tree) {
         let husband = this.husband !== null ? s.findPerson(this.husband) : null;
         let wife = this.wife !== null ? s.findPerson(this.wife) : null;
         let husbandName = husband ? husband.formatName() : null;
@@ -112,7 +112,7 @@ export class Family {
     }
 }
 
-export class Slackt {
+export class Tree {
     people: Person[];
     families: Family[];
 
@@ -187,7 +187,7 @@ export class Slackt {
     }
 
     static fromObject(obj: { people: IPerson[]; families: IFamily[] }) {
-        return new Slackt(
+        return new Tree(
             obj.people.map((p) => Person.fromObject(p)),
             obj.families.map((f) => Family.fromObject(f)),
         );
@@ -197,12 +197,14 @@ export class Slackt {
         return JSON.stringify(this.asObject());
     }
 
-    static fromString(str: string): Slackt {
-        return Slackt.fromObject(JSON.parse(str));
+    static fromString(str: string | null): Tree {
+        if (str === null) return new Tree();
+
+        return Tree.fromObject(JSON.parse(str));
     }
 }
 
-export function FindDirectRelatives(s: Slackt, personId: number) {
+export function FindDirectRelatives(s: Tree, personId: number) {
     let families = s.families.filter(
         (f) =>
             f.husband === personId ||
@@ -217,7 +219,7 @@ export function FindDirectRelatives(s: Slackt, personId: number) {
     return allFamilyMembers.filter((id) => id !== personId);
 }
 
-export function download(openedFile: Slackt) {
+export function download(openedFile: Tree) {
     const blob = new Blob([openedFile.stringify()], {
         type: 'application/json',
     });
@@ -248,9 +250,9 @@ export async function open(e: Event) {
         if (!file || !text) {
             throw new Error('äawh');
         }
-        let openedFile: Slackt | null = null;
+        let openedFile: Tree | null = null;
         try {
-            openedFile = Slackt.fromString(text);
+            openedFile = Tree.fromString(text);
         } catch (error) {
             throw new Error('Fel på filen: ' + error);
         }
@@ -260,4 +262,10 @@ export async function open(e: Event) {
         }
     }
     throw new Error('fel');
+}
+
+export function idFromString(str: string | null) {
+    if (str === null || str === 'null') return null;
+
+    return parseInt(str);
 }

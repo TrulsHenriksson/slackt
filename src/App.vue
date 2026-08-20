@@ -1,29 +1,44 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import Header from './Header.vue';
-import { Slackt } from './typesnmethods.ts';
+import { Tree, idFromString } from './typesnmethods.ts';
 
-let openedFile = ref(new Slackt());
+let workingTree = ref(Tree.fromString(localStorage.getItem('openedFile')));
+let selectedPersonId = ref<number | null>(
+    idFromString(localStorage.getItem('selectedPerson')),
+);
+let selectedFamilyId = ref<number | null>(
+    idFromString(localStorage.getItem('selectedFamily')),
+);
 
-let selectedPerson = ref<number | null>(null);
-let sp = localStorage.getItem('selectedPerson');
-if (sp !== null && sp !== 'null') selectedPerson.value = parseInt(sp);
+watch(
+    workingTree,
+    (newVal) => {
+        localStorage.setItem('openedFile', newVal.stringify());
+    },
+    { deep: true },
+);
 
-let selectedFamily = ref<number | null>(null);
-let sf = localStorage.getItem('selectedFamily');
-if (sf !== null && sf !== 'null') selectedFamily.value = parseInt(sf);
+watch(selectedPersonId, (newVal) => {
+    localStorage.setItem(
+        'selectedPerson',
+        newVal === null ? '' : newVal.toString(),
+    );
+});
 
-let fromLS = localStorage.getItem('openedFile');
-if (fromLS) {
-    openedFile.value = Slackt.fromString(fromLS);
-}
+watch(selectedFamilyId, (newVal) => {
+    localStorage.setItem(
+        'selectedFamily',
+        newVal === null ? '' : newVal.toString(),
+    );
+});
 </script>
 
 <template>
-    <Header v-model="openedFile" />
+    <Header v-model="workingTree" />
     <RouterView
-        v-model:openedFile="openedFile"
-        v-model:selectedPerson="selectedPerson"
-        v-model:selectedFamily="selectedFamily"
+        v-model:workingTree="workingTree"
+        v-model:selectedPersonId="selectedPersonId"
+        v-model:selectedFamilyId="selectedFamilyId"
     />
 </template>
