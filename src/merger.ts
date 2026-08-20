@@ -1,22 +1,17 @@
-import { isNewExpression } from 'typescript/unstable/ast';
 import {
     Slackt,
     Person,
     Family,
     PersonId,
     FamilyId,
-    FindDirectRelatives,
     map_append,
-    download,
-    open,
-    clear,
 } from './typesnmethods.js';
 
 
 
 /** Make a map from first names to the people with that name */
-function groupFirstNames(s: Slackt): Map<string, number[]> {
-    let ids: Map<string, number[]> = new Map()
+function groupFirstNames(s: Slackt): Map<string, PersonId[]> {
+    let ids: Map<string, PersonId[]> = new Map()
     for (const person of s.people) {
         map_append(ids, person.nameFirst, person.id)
     }
@@ -86,17 +81,16 @@ function possibly_same_person(
   */
 function identify_people(target: Slackt, source: Slackt): [Map<PersonId, PersonId>, Map<PersonId, PersonId[]>] {
     /** Map from a source person's id to the identified target person's id */
-    let targetIds: Map<PersonId, PersonId> = new Map()
+    let sourceToTarget: Map<PersonId, PersonId> = new Map()
     /** Map from a target person's id to the ids of the candidate source people */
-    let candidateIds: Map<PersonId, PersonId[]> = new Map()
+    let targetToCandidateSources: Map<PersonId, PersonId[]> = new Map()
 
     let firstNameIds = groupFirstNames(source)
 
     for (let targetPerson of target.people) {
         let candidates = (
-            firstNameIds
-            .get(targetPerson.nameFirst)
-            ?.map((id) => source.getPerson(id))
+            firstNameIds.get(targetPerson.nameFirst)
+                ?.map((id) => source.getPerson(id))
             ?? []
         ).filter((candidate) => possibly_same_person(target, source, targetPerson, candidate))
 
@@ -104,23 +98,23 @@ function identify_people(target: Slackt, source: Slackt): [Map<PersonId, PersonI
             continue
         } else if (candidates.length === 1) {
             // Map the only possible source person to the target
-            targetIds.set(candidates[0].id, targetPerson.id)
+            sourceToTarget.set(candidates[0].id, targetPerson.id)
         } else if (candidates.length > 1) {
             // Signify that any of these sources may map to the target
-            candidateIds.set(targetPerson.id, candidates.map((p) => p.id))
+            targetToCandidateSources.set(targetPerson.id, candidates.map((p) => p.id))
         }
     }
 
-    return [targetIds, candidateIds]
+    return [sourceToTarget, targetToCandidateSources]
 }
 
 
 
-function groupFamilies(s: Slackt) {
+function groupFamilies(families: Family[]): [Map<PersonId, FamilyId>, Map<PersonId, FamilyId[]>, Map<PersonId, FamilyId[]>] {
     let childMap: Map<PersonId, FamilyId> = new Map()
     let husbandMap: Map<PersonId, FamilyId[]> = new Map()
     let wifeMap: Map<PersonId, FamilyId[]> = new Map()
-    for (const family of s.families) {
+    for (const family of families) {
         for (const childId of family.children) {
             childMap.set(childId, family.id)
         }
@@ -173,23 +167,42 @@ function identify_families(
     targetFamilies: Family[], sourceFamilies: Family[]
 ): [Map<FamilyId, FamilyId>, Map<FamilyId, FamilyId[]>]
 {
-    let targetIds: Map<FamilyId, FamilyId> = new Map()
-    let candidateIds: Map<FamilyId, FamilyId[]> = new Map()
+    /** Map from source families to the single compatible target family. */
+    let sourceToTarget: Map<FamilyId, FamilyId> = new Map()
+    /** Map from target families to compatible source families (when multiple exist). */
+    let targetToCandidateSources: Map<FamilyId, FamilyId[]> = new Map()
 
+    // Create maps from each type of person in a family to the famil(y/ies) they are in
+    let [childToFamily, husbandToFamilies, wifeToFamilies] = groupFamilies(sourceFamilies)
     for (const targetFamily of targetFamilies) {
-        // TODO: Improve this filtering, currently O(n*m). Use the maps from groupFamilies.
-        let candidates = sourceFamilies.filter((candidate) => possibly_same_family(targetFamily, candidate))
+        // Get all source families that the target children, husband, and wife are in
+        let candidateIds: FamilyId[] = (
+            targetFamily.children
+                .map((childId) => childToFamily.get(childId))
+                .filter((x) => x !== undefined)
+        )
+        if (targetFamily.husband !== null)
+            candidateIds = candidateIds.concat(husbandToFamilies.get(targetFamily.husband) ?? [])
+        if (targetFamily.wife !== null)
+            candidateIds = candidateIds.concat(wifeToFamilies.get(targetFamily.wife) ?? [])
 
-        if (candidates.length === 0) {
+        // Deduplicate and filter
+        let candidateFamilies = (
+            [...new Set(candidateIds)]
+                .map((id) => sourceFamilies.find((f) => f.id === id)!)
+                .filter((candidate) => possibly_same_family(targetFamily, candidate))
+        )
+
+        if (candidateFamilies.length === 0) {
             continue
-        } else if (candidates.length === 1) {
-            targetIds.set(candidates[0].id, targetFamily.id)
+        } else if (candidateFamilies.length === 1) {
+            sourceToTarget.set(candidateFamilies[0].id, targetFamily.id)
         } else {
-            candidateIds.set(targetFamily.id, candidates.map((f) => f.id))
+            targetToCandidateSources.set(targetFamily.id, candidateFamilies.map((f) => f.id))
         }
     }
 
-    return [targetIds, candidateIds]
+    return [sourceToTarget, targetToCandidateSources]
 }
 
 
@@ -202,6 +215,8 @@ function identify_families(
  * @returns
  */
 export function merged(target: Slackt, source: Slackt): Slackt | undefined {
+    // ===== Start merging people =====
+
     let [targetIds, possibleSourceIds] = identify_people(target, source)
     // targetIds must be a bijection, identify in reverse as well
     let [_p, possibleTargetIds] = identify_people(source, target)
@@ -249,6 +264,8 @@ export function merged(target: Slackt, source: Slackt): Slackt | undefined {
             family.wife = targetIds.get(family.wife)!
         family.children = family.children.map((childId) => targetIds.get(childId)!)
     }
+
+    // ===== Start merging families =====
 
     let [targetFamilyIds, possibleSourceFamilyIds] = identify_families(target.families, newSourceFamilies)
     // targetFamilyIds must be a bijection, identify in reverse as well
