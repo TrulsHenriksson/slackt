@@ -228,12 +228,12 @@ export function merged(target: Slackt, source: Slackt): Slackt | undefined {
         let [to, from] = reverse ? [source, target] : [target, source]
         let [toName, fromName] = reverse ? ["nya", "öppna"] : ["öppna", "nya"]
         let mapping = reverse ? possibleTargetIds : possibleSourceIds
-        logPersonUncertaintyTable(mapping, to, from, toName, fromName)
 
         alert(
             `Kunde inte importera: Minst en person i den ${toName} filen har flera personer i den `
             + `${fromName} filen som den passar ihop med. Se konsolen (Ctrl+Skift+i) för mer exakt beskrivning.`
         )
+        logPersonUncertaintyTable(mapping, to, from, toName, fromName)
         return
     }
 
@@ -277,12 +277,12 @@ export function merged(target: Slackt, source: Slackt): Slackt | undefined {
         let [to, from] = reverse ? [source, target] : [target, source]
         let [toName, fromName] = reverse ? ["nya", "öppna"] : ["öppna", "nya"]
         let mapping = reverse ? possibleTargetFamilyIds : possibleSourceFamilyIds
-        logFamilyUncertaintyTable(mapping, to, from, toName, fromName)
 
         alert(
             `Kunde inte importera: Minst en familj i den ${toName} filen har flera familjer i den `
             + `${fromName} filen som den passar ihop med. Se konsolen (Ctrl+Skift+i) för mer exakt beskrivning.`
         )
+        logFamilyUncertaintyTable(mapping, to, from, toName, fromName)
         return
     }
 
