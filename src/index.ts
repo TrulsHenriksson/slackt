@@ -2,6 +2,8 @@ import {
     Slackt,
     Person,
     Family,
+    PersonId,
+    FamilyId,
     FindDirectRelatives,
     download,
     open,
@@ -92,7 +94,7 @@ clearButton.onclick = () => {
     timeStampLastClickedClear = Date.now();
 };
 
-function analysePerson(p: Person, counted: Set<number>) {
+function analysePerson(p: Person, counted: Set<PersonId>) {
     counted.add(p.id);
     FindDirectRelatives(openedFile, p.id)
         .filter((p) => !counted.has(p))
@@ -457,7 +459,7 @@ function moveChild(id: number, step: number) {
     if (selectedFamily === null)
         return
 
-    let children = openedFile.getFamily(selectedFamily).children
+    let children = openedFile.getFamily(selectedFamily as FamilyId).children
     let i = children.findIndex((c) => c === id)
     if (i === -1)
         return  // No child with id `id`
@@ -487,7 +489,7 @@ function select(e: MouseEvent) {
             return;
         }
 
-        selectedPerson = parseInt(id);
+        selectedPerson = parseInt(id) as PersonId;
         refreshPersonInspector();
     } else if (type === 'family') {
         if (id === undefined) {
@@ -496,7 +498,7 @@ function select(e: MouseEvent) {
             return;
         }
 
-        selectedFamily = parseInt(id);
+        selectedFamily = parseInt(id) as FamilyId;
         refreshFamilyInspector();
     }
 
@@ -506,13 +508,13 @@ function select(e: MouseEvent) {
 
 let openedFile = new Slackt();
 
-let selectedPerson: number | null = null;
+let selectedPerson: PersonId | null = null;
 let sp = localStorage.getItem('selectedPerson');
-if (sp !== null && sp !== 'null') selectedPerson = parseInt(sp);
+if (sp !== null && sp !== 'null') selectedPerson = parseInt(sp) as PersonId;
 
-let selectedFamily: number | null = null;
+let selectedFamily: FamilyId | null = null;
 let sf = localStorage.getItem('selectedFamily');
-if (sf !== null && sf !== 'null') selectedFamily = parseInt(sf);
+if (sf !== null && sf !== 'null') selectedFamily = parseInt(sf) as FamilyId;
 
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {

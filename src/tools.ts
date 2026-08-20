@@ -5,6 +5,7 @@ import {
     clear,
     FindDirectRelatives,
     Person,
+    PersonId,
 } from './typesnmethods.js';
 
 function refresh() {
@@ -54,12 +55,12 @@ clearButton.onclick = () => {
 };
 
 listNetworkButton.onclick = () => {
-    let networksSet: Set<number>[] = [];
+    let networksSet: Set<PersonId>[] = [];
     for (let i = 0; i < openedFile.people.length; i++) {
         if (networksSet.some((n) => n.has(openedFile.people[i].id))) continue;
 
         let p = openedFile.people[i];
-        let network = analysePerson(p, new Set<number>());
+        let network = analysePerson(p, new Set<PersonId>());
         networksSet.push(network);
     }
 
@@ -120,7 +121,7 @@ listNetworkButton.onclick = () => {
     }
 };
 
-function analysePerson(p: Person, counted: Set<number>) {
+function analysePerson(p: Person, counted: Set<PersonId>) {
     counted.add(p.id);
     FindDirectRelatives(openedFile, p.id)
         .filter((p) => !counted.has(p))

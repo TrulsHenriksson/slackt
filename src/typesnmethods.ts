@@ -1,6 +1,9 @@
-// Aliases so they don't get mixed up with normal numbers
-export type PersonId = number
-export type FamilyId = number
+// Helper for creating ID types that can't be mixed up with regular numbers
+// https://stackoverflow.com/a/50521248
+type Opaque<T, K> = T & { __opaque__: K }
+
+export type PersonId = Opaque<number, "PersonId">
+export type FamilyId = Opaque<number, "FamilyId">
 
 interface IPerson {
     id: PersonId;
@@ -197,13 +200,13 @@ export class Slackt {
     }
 
     addEmptyPerson(): Person {
-        let newPerson = new Person(this.people.length);
+        let newPerson = new Person(this.people.length as PersonId);
         this.people.push(newPerson)
         return newPerson
     }
 
     addEmptyFamily(): Family {
-        let newFamily = new Family(this.families.length);
+        let newFamily = new Family(this.families.length as FamilyId);
         this.families.push(newFamily)
         return newFamily
     }
@@ -311,7 +314,7 @@ export class Slackt {
 }
 
 
-export function FindDirectRelatives(s: Slackt, personId: number) {
+export function FindDirectRelatives(s: Slackt, personId: PersonId) {
     let families = s.families.filter(
         (f) =>
             f.husband === personId ||
@@ -320,7 +323,7 @@ export function FindDirectRelatives(s: Slackt, personId: number) {
     );
     let allFamilyMembers = families.flatMap((f) =>
         [f.husband, f.wife, ...f.children].filter(
-            (id): id is number => id !== null,
+            (id): id is PersonId => id !== null,
         ),
     );
     return allFamilyMembers.filter((id) => id !== personId);
