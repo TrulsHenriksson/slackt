@@ -216,7 +216,7 @@ export function merged(target: Slackt, source: Slackt): Slackt | undefined {
         logPersonUncertaintyTable(mapping, to, from, toName, fromName)
 
         alert(
-            `Kunde inte slå ihop: Minst en person i den ${toName} filen har flera personer i den `
+            `Kunde inte importera: Minst en person i den ${toName} filen har flera personer i den `
             + `${fromName} filen som den passar ihop med. Se konsolen (Ctrl+Skift+i) för mer exakt beskrivning.`
         )
         return
@@ -263,7 +263,7 @@ export function merged(target: Slackt, source: Slackt): Slackt | undefined {
         logFamilyUncertaintyTable(mapping, to, from, toName, fromName)
 
         alert(
-            `Kunde inte slå ihop: Minst en familj i den ${toName} filen har flera familjer i den `
+            `Kunde inte importera: Minst en familj i den ${toName} filen har flera familjer i den `
             + `${fromName} filen som den passar ihop med. Se konsolen (Ctrl+Skift+i) för mer exakt beskrivning.`
         )
         return
