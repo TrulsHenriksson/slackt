@@ -78,7 +78,7 @@ function possibly_same_person(
 /**
   * Find people in the source and target files with the same first
   * names, and try to pair them up.
-  * 
+  *
   * @param target The (currently open) file to use as a base for the merge.
   * @param source The (newly opened) file to merge from.
   * @returns A map `targetIds` of source person => target person pairs, and a map `candidateIds` of
@@ -194,12 +194,12 @@ function identify_families(
 
 
 /** Create a new Slackt file by copying or adding data from `source` into `target`.
- * 
+ *
  * Leaves both `target` and `source` unchanged, and shows an alert if the merging fails.
- * 
+ *
  * @param target The (currently open) file to use as a base for the merge.
  * @param source The (newly opened) file to merge from.
- * @returns 
+ * @returns
  */
 export function merged(target: Slackt, source: Slackt): Slackt | undefined {
     let [targetIds, possibleSourceIds] = identify_people(target, source)
@@ -222,7 +222,7 @@ export function merged(target: Slackt, source: Slackt): Slackt | undefined {
         return
     }
 
-    let newFile = new Slackt(target.people, target.families)
+    let newFile = target.copy()
 
     // Add people
     for (const sourcePerson of source.people) {
@@ -261,7 +261,7 @@ export function merged(target: Slackt, source: Slackt): Slackt | undefined {
         let [toName, fromName] = reverse ? ["nya", "öppna"] : ["öppna", "nya"]
         let mapping = reverse ? possibleTargetFamilyIds : possibleSourceFamilyIds
         logFamilyUncertaintyTable(mapping, to, from, toName, fromName)
-        
+
         alert(
             `Kunde inte slå ihop: Minst en familj i den ${toName} filen har flera familjer i den `
             + `${fromName} filen som den passar ihop med. Se konsolen (Ctrl+Skift+i) för mer exakt beskrivning.`

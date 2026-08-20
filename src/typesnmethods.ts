@@ -301,6 +301,13 @@ export class Slackt {
     static fromString(str: string): Slackt {
         return Slackt.fromObject(JSON.parse(str))
     }
+
+    copy(): Slackt {
+        return new Slackt(
+            this.people.map((p) => p.copy()),
+            this.families.map((f) => f.copy()),
+        )
+    }
 }
 
 
