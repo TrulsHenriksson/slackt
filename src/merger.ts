@@ -43,10 +43,14 @@ function possibly_same_person(
         && source_person.dateDeath !== ""
         && target_person.dateDeath !== source_person.dateDeath
     ) return false
+    // Because of name changes, we can only use the first surname the people had
+    // Example: Anna Svensson could be the same as Anna Jönsson (f. Svensson).
+    let targetOriginalLastName = target_person.nameLastMaiden === "" ? target_person.nameLast : target_person.nameLastMaiden
+    let sourceOriginalLastName = source_person.nameLastMaiden === "" ? source_person.nameLast : source_person.nameLastMaiden
     if (
-        target_person.nameLastMaiden !== ""
-        && source_person.nameLastMaiden !== ""
-        && target_person.nameLastMaiden !== source_person.nameLastMaiden
+        targetOriginalLastName !== ""
+        && sourceOriginalLastName !== ""
+        && targetOriginalLastName !== sourceOriginalLastName
     ) return false
 
     if (!check_parents)

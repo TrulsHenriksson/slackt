@@ -69,14 +69,14 @@ export class Person {
     }
 
     updateFrom(other: Person){
-        // Take names from `other` if `this` doesn't have them
-        if (this.nameFirst === "")
+        // Take names from other unless they're empty
+        if (other.nameFirst !== "")
             this.nameFirst = other.nameFirst
-        if (this.nameLast === "") 
+        if (other.nameLast !== "") 
             this.nameLast = other.nameLast
-        if (this.nameLastMaiden === "")
+        if (other.nameLastMaiden !== "")
             this.nameLastMaiden = other.nameLastMaiden
-        // Take whichever date is more specific
+        // Take whichever date is more specific, assuming YYYY[-MM[-DD]] format
         if (this.dateBirth.length < other.dateBirth.length)
             this.dateBirth = other.dateBirth
         if (this.dateDeath.length < other.dateDeath.length)
@@ -132,15 +132,16 @@ export class Family {
     }
 
     updateFrom(other: Family) {
-        if (this.husband === null)
+        // Take fields from other, unless they're empty
+        if (other.husband !== null)
             this.husband = other.husband
-        if (this.wife === null)
+        if (other.wife !== null)
             this.wife = other.wife
         // Deduplicate the combined children
         this.children = [...new Set(this.children.concat(other.children))]
-        if (this.nameLastOverride === "")
+        if (other.nameLastOverride !== "")
             this.nameLastOverride = other.nameLastOverride
-        // Take whichever date is more specific (assuming YYYY[-MM[-DD]] format)
+        // Take whichever date is more specific, assuming YYYY[-MM[-DD]] format
         if (this.dateStart.length < other.dateStart.length)
             this.dateStart = other.dateStart
     }
