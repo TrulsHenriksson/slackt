@@ -10,9 +10,9 @@ import {
 
 
 /** Make a map from first names to the people with that name */
-function groupFirstNames(s: Slackt): Map<string, PersonId[]> {
+function groupFirstNames(people: Person[]): Map<string, PersonId[]> {
     let ids: Map<string, PersonId[]> = new Map()
-    for (const person of s.people) {
+    for (const person of people) {
         map_append(ids, person.nameFirst, person.id)
     }
     return ids
@@ -79,6 +79,17 @@ function possibly_same_person(
     return true
 }
 
+function exactly_same_person(targetPerson: Person, sourcePerson: Person): boolean {
+    return (
+        targetPerson.id === sourcePerson.id
+        && targetPerson.nameFirst === sourcePerson.nameFirst
+        && targetPerson.nameLast === sourcePerson.nameLast
+        && targetPerson.nameLastMaiden === sourcePerson.nameLastMaiden
+        && targetPerson.dateBirth === sourcePerson.dateBirth
+        && targetPerson.dateDeath === sourcePerson.dateDeath
+    )
+}
+
 /**
   * Find people in the source and target files with the same first
   * names, and try to pair them up.
@@ -91,12 +102,25 @@ function possibly_same_person(
 function identify_people(target: Slackt, source: Slackt): [Map<PersonId, PersonId>, Map<PersonId, PersonId[]>] {
     /** Map from a source person's id to the identified target person's id */
     let sourceToTarget: Map<PersonId, PersonId> = new Map()
+    let ignoredTargets: Set<PersonId> = new Set()
     /** Map from a target person's id to the ids of the candidate source people */
     let targetToCandidateSources: Map<PersonId, PersonId[]> = new Map()
 
-    let firstNameIds = groupFirstNames(source)
+    // First check people that are the exact same (even in position)
+    let length = Math.min(target.people.length, source.people.length)
+    for (let i = 0; i < length; i++) {
+        let targetPerson = target.people[i], sourcePerson = source.people[i]
+        if (exactly_same_person(targetPerson, sourcePerson)) {
+            sourceToTarget.set(sourcePerson.id, targetPerson.id)
+            ignoredTargets.add(targetPerson.id)
+        }
+    }
 
-    for (let targetPerson of target.people) {
+    let stillAvailableTargets = target.people.filter((p) => !ignoredTargets.has(p.id))
+    let stillAvailableSources = source.people.filter((p) => !sourceToTarget.has(p.id))
+
+    let firstNameIds = groupFirstNames(stillAvailableSources)
+    for (let targetPerson of stillAvailableTargets) {
         let candidates = (
             firstNameIds.get(targetPerson.nameFirst)
                 ?.map((id) => source.getPerson(id))
