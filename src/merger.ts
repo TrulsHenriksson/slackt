@@ -25,7 +25,7 @@ function possibly_same_person(
     source: Slackt,
     target_person: Person,
     source_person: Person,
-    check_parents: boolean = true,
+    check_immediate_family: boolean = true,
 ): boolean {
     // Check that these fields match (if they are not empty)
     if (
@@ -46,9 +46,10 @@ function possibly_same_person(
         targetOriginalLastName !== ""
         && sourceOriginalLastName !== ""
         && targetOriginalLastName !== sourceOriginalLastName
-    ) return false
+    )
+        return false
 
-    if (!check_parents)
+    if (!check_immediate_family)
         // Don't check any more recursively
         return true
 
@@ -60,11 +61,19 @@ function possibly_same_person(
         if (
             target_parents[i] !== undefined
             && source_parents[i] !== undefined
-            && !possibly_same_person(target, source, target_parents[i], source_parents[i], check_parents=false)
-        ) {
+            && !possibly_same_person(target, source, target_parents[i], source_parents[i], check_immediate_family=false)
+        )
             return false
         }
-    }
+
+    let target_spouses = target.getSpousesFromParent(target_person.id)
+    let source_spouses = source.getSpousesFromParent(source_person.id)
+    if (
+        target_spouses.length === 1
+        && source_spouses.length === 1
+        && !possibly_same_person(target, source, target_spouses[0], source_spouses[0], check_immediate_family=false)
+    )
+        return false
 
     // No checks failed, these two could be the same
     return true

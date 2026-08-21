@@ -265,7 +265,16 @@ export class Slackt {
     }
 
     getFamiliesFromParent(personId: PersonId): Family[] {
-        return (this.familyMap.get(personId) ?? []).map(this.getFamily)
+        return (this.familyMap.get(personId) ?? []).map((id) => this.getFamily(id))
+    }
+
+    getSpousesFromParent(personId: PersonId): Person[] {
+        return (
+            this.getFamiliesFromParent(personId)
+                .map((f) => f.husband === personId ? f.wife : f.husband)
+                .filter((id) => id !== null)
+                .map((id) => this.getPerson(id))
+        )
     }
 
     getChildrenFromParent(personId: PersonId): Person[] {
