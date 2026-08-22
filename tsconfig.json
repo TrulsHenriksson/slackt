@@ -14,7 +14,7 @@
         "checkJs": false,
         "resolveJsonModule": true,
         "noEmitOnError": true,
-        "lib": ["DOM", "ES2020"],
+        "lib": ["DOM", "ES2025"],
         "typeRoots": ["./node_modules/@types"],
         "forceConsistentCasingInFileNames": true
     },
