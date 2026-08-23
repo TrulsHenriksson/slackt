@@ -166,7 +166,15 @@ export class DateSet {
     }
 
     static fromString(spec: string): DateSet {
-        let [years, months, days] = spec.split("-")
+        const parts = spec.split("-")
+        if (parts.length > 3) {
+            throw new DateParseError(
+                `At most two "-" may occur, found ${parts.length - 1}`, 
+                `Max två "-" får finnas, hittade ${parts.length - 1}.`
+            )
+        }
+
+        let [years, months, days] = parts
         // Give default values
         years = years ?? "????"
         months = months ?? "??"
@@ -245,39 +253,52 @@ export class DatePoint {
         monthDefault: string,
         dayDefault: string
     ): DatePoint {
-        const match = spec.match(/^(?:(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?)?$/)
-        if (match === null)
-            throw new DateParseError(`Invalid date: ${spec}`, `Ogiltigt datum: ${spec}.`)
+        const parts = spec.split("-")
+        if (parts.length > 3) {
+            throw new DateParseError(
+                `At most two "-" may occur, found ${parts.length - 1}`, 
+                `Max två "-" får finnas, hittade ${parts.length - 1}.`
+            )
+        }
 
-        return new DatePoint(
-            Number(match[1] ?? yearDefault),
-            Number(match[2] ?? monthDefault),
-            Number(match[3] ?? dayDefault)
-        )
+        let [year, month, day] = parts
+        // Give default values
+        year = year ?? yearDefault
+        month = month ?? monthDefault
+        day = day ?? dayDefault
+
+        if (year.match(/^\d{4}$/) === null)
+            throw new DateParseError(`Invalid year: ${year}`, `Ogiltigt årtal: ${year}.`)
+        if (month.match(/^\d{2}$/) === null)
+            throw new DateParseError(`Invalid month: ${month}`, `Ogiltig månad: ${month}.`)
+        if (day.match(/^\d{2}$/) === null)
+            throw new DateParseError(`Invalid day: ${day}`, `Ogiltigt datum: ${day}.`)
+
+        return new DatePoint(Number(year), Number(month), Number(day))
     }
 
-    toString(): string {
-        return (
-            this.year.toFixed().padStart(4, "0")
-            + "-" + this.month.toFixed().padStart(2, "0")
-            + "-" + this.day.toFixed().padStart(2, "0")
-        )
+    toString(cutYear?: string, cutMonth?: string, cutDay?: string): string {
+        let yearString = this.year.toFixed().padStart(4, "0")
+        let monthString = "-" + this.month.toFixed().padStart(2, "0")
+        let dayString = "-" + this.day.toFixed().padStart(2, "0")
+        if (cutDay !== undefined && dayString.endsWith(cutDay)) {
+            dayString = ""
+            if (cutMonth !== undefined && monthString.endsWith(cutMonth)) {
+                monthString = ""
+                if (cutYear !== undefined && yearString.endsWith(cutYear)) {
+                    yearString = ""
+                }
+            }
+        }
+        return yearString + monthString + dayString
     }
 
     isBefore(other: DatePoint): boolean {
-        if (this.year < other.year)
-            return true
-        if (this.year > other.year)
-            return false
-
-        if (this.month < other.month)
-            return true
-        if (this.month > other.month)
-            return false
-
-        if (this.day < other.day)
-            return true
-        return false
+        if (this.year !== other.year)
+            return this.year < other.year
+        if (this.month !== other.month)
+            return this.month < other.month
+        return this.day < other.day
     }
 
     equals(other: DatePoint): boolean {
@@ -330,7 +351,7 @@ export class DateRange {
     }
 
     toString(): string {
-        return this.start.toString() + ".." + this.stop.toString()
+        return this.start.toString("0001", "01", "01") + ".." + this.stop.toString("9999", "12", "31")
     }
 
     intersection(other: DateRange): DateRange | null {
