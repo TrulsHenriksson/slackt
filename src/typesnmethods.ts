@@ -332,61 +332,9 @@ export function FindDirectRelatives(s: Slackt, personId: PersonId) {
     );
     let allFamilyMembers = families.flatMap((f) =>
         [f.husband, f.wife, ...f.children].filter(
-            (id): id is PersonId => id !== null,
+            (id) => id !== null,
         ),
     );
     return allFamilyMembers.filter((id) => id !== personId);
 }
 
-
-
-export function download(openedFile: Slackt) {
-    const blob = new Blob([openedFile.stringify()], {
-        type: 'application/json',
-    });
-    const el = document.createElement('a');
-    el.setAttribute('href', window.URL.createObjectURL(blob));
-
-    let d = new Date();
-    var datestring =
-        d.getFullYear() +
-        '-' +
-        (d.getMonth() + 1).toString().padStart(2, '0') +
-        '-' +
-        d.getDate().toString().padStart(2, '0') +
-        ' ' +
-        d.getHours().toString().padStart(2, '0') +
-        ':' +
-        d.getMinutes().toString().padStart(2, '0');
-    const fileName = 'slackt ' + datestring + '.json';
-
-    el.setAttribute('download', fileName);
-    el.click();
-}
-
-export async function open(e: Event, openedFile: Slackt) {
-    if (e.target instanceof HTMLInputElement) {
-        const file = e.target.files?.item(0);
-        const text = await file?.text();
-        if (!file || !text) {
-            console.error('äawh');
-            return null;
-        }
-        try {
-            openedFile = Slackt.fromString(text);
-        } catch (error) {
-            console.error('Fel på filen', error);
-        }
-
-        if (openedFile) {
-            localStorage.setItem('openedFile', openedFile.stringify());
-            return openedFile;
-        }
-    }
-}
-
-export function clear() {
-    let newFile = new Slackt();
-    localStorage.setItem('openedFile', newFile.stringify());
-    return newFile;
-}
