@@ -2,11 +2,21 @@ import {
     Slackt,
     Person,
     Family,
-    FindDirectRelatives,
+    PersonId,
+    FamilyId,
+} from './typesnmethods.js';
+import {
     download,
     open,
-    clear,
-} from './typesnmethods.js';
+    tryClear,
+    assertElementsExist,
+    retrieveFileFromLocalStorage,
+    retrieveLastSelectedFamily,
+    retrieveLastSelectedPerson,
+    storeFileInLocalStorage,
+    storeSelectedFamilyInLocalStorage,
+    storeSelectedPersonInLocalStorage,
+} from "./io.js";
 
 // Guarantee that none of these are null because we check them below
 const openButton = document.getElementById('open')!;
@@ -23,7 +33,7 @@ const familyInspector = document.getElementById('family')!;
 const addPerson = document.getElementById('addPerson')!;
 const addFamily = document.getElementById('addFamily')!;
 // Make sure all of them exist
-[
+assertElementsExist([
     openButton,
     saveButton,
     clearButton,
@@ -37,47 +47,49 @@ const addFamily = document.getElementById('addFamily')!;
     familyInspector,
     addPerson,
     addFamily,
-].forEach((element) => {
-    if (!element) throw new Error();
-});
+])
+
 
 openButton.addEventListener('change', async (e) => {
-    openedFile = (await open(e, openedFile)) || openedFile;
+    const newFile = await open(e, openedFile);
+    if (newFile === undefined)
+        return
+
+    openedFile = newFile
+    storeFileInLocalStorage(openedFile)
+    selectedPerson = retrieveLastSelectedPerson(openedFile)
+    selectedFamily = retrieveLastSelectedFamily(openedFile)
+
     refreshPersonList();
     refreshFamilyList();
+    refreshPersonInspector();
+    refreshFamilyInspector();
+    
+    scrollToSelectedPerson();
+    scrollToSelectedFamily();
 });
 
-saveButton.onclick = () => download(openedFile);
-
-let timeStampLastClickedClear = 0;
-clearButton.onclick = () => {
-    // Click twice within 2 seconds to clear
-    if (Date.now() - timeStampLastClickedClear < 2000) {
-        openedFile = clear();
-        selectedPerson = null;
-        selectedFamily = null;
-        refreshPersonList();
-        refreshFamilyList();
-        refreshPersonInspector();
-        refreshFamilyInspector();
-    } else {
-        alert(
-            'Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.',
-        );
-    }
-    timeStampLastClickedClear = Date.now();
-};
-
-function analysePerson(p: Person, counted: Set<number>) {
-    counted.add(p.id);
-    FindDirectRelatives(openedFile, p.id)
-        .filter((p) => !counted.has(p))
-        .forEach((r) => {
-            counted = analysePerson(openedFile.getPerson(r), counted);
-        });
-
-    return counted;
+saveButton.onclick = () => {
+    download(openedFile);
 }
+
+clearButton.onclick = () => {
+    const newFile = tryClear();
+    if (newFile === undefined)
+        return
+
+    openedFile = newFile
+    selectedPerson = null;
+    selectedFamily = null;
+    storeFileInLocalStorage(openedFile)
+    storeSelectedPersonInLocalStorage(selectedPerson)
+    storeSelectedFamilyInLocalStorage(selectedFamily)
+
+    refreshPersonList();
+    refreshFamilyList();
+    refreshPersonInspector();
+    refreshFamilyInspector();
+};
 
 searchPeople.oninput = () => {
     refreshPersonList();
@@ -99,29 +111,36 @@ clearSearchFamilies.onclick = () => {
 
 addPerson.onclick = () => {
     selectedPerson = openedFile.addEmptyPerson();
+    storeFileInLocalStorage(openedFile)
+    storeSelectedPersonInLocalStorage(selectedPerson)
+
     refreshPersonInspector();
     refreshPersonList();
-    let p = peopleSection.querySelector(
-        `[data-id="${selectedPerson}"]`,
-    ) as HTMLElement;
-    p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    scrollToSelectedPerson();
+    focusPersonInspector();
 };
 addFamily.onclick = () => {
     selectedFamily = openedFile.addEmptyFamily();
+    storeFileInLocalStorage(openedFile)
+    storeSelectedFamilyInLocalStorage(selectedFamily)
+
     refreshFamilyInspector();
     refreshFamilyList();
-    let f = familiesSection.querySelector(
-        `[data-id="${selectedFamily}"]`,
-    ) as HTMLElement;
-    f?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    scrollToSelectedFamily();
 };
+
+function scrollToSelectedPerson() {
+    let p = peopleSection.querySelector(`[data-id="${selectedPerson}"]`);
+    p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function scrollToSelectedFamily() {
+    let f = familiesSection.querySelector(`[data-id="${selectedFamily}"]`);
+    f?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 function refreshPersonList() {
     peopleSection.innerHTML = '';
-
-    localStorage.setItem('openedFile', openedFile.stringify());
-
-    if (!openedFile) return;
 
     let filter = (searchPeople as HTMLInputElement).value;
     let people = openedFile.people;
@@ -140,17 +159,10 @@ function refreshPersonList() {
         el.onclick = select;
         peopleSection.append(el);
     });
-
-    let p = peopleSection.querySelector(`[data-id="${selectedPerson}"]`);
-    p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function refreshFamilyList() {
     familiesSection.innerHTML = '';
-
-    localStorage.setItem('openedFile', openedFile.stringify());
-
-    if (!openedFile) return;
 
     let filter = (searchFamilies as HTMLInputElement).value;
     let families = openedFile.families;
@@ -172,16 +184,9 @@ function refreshFamilyList() {
         el.onclick = select;
         familiesSection.append(el);
     });
-
-    let p = familiesSection.querySelector(`[data-id="${selectedFamily}"]`);
-    p?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-const refreshPersonInspector = () => {
-    localStorage.setItem(
-        'selectedPerson',
-        selectedPerson !== null ? '' + selectedPerson : 'null',
-    );
+function refreshPersonInspector() {
     personInspector.innerHTML = '';
 
     if (selectedPerson === null) {
@@ -237,16 +242,14 @@ const refreshPersonInspector = () => {
     });
 
     personInspector.append(formEl);
+}
 
+function focusPersonInspector() {
     let inpEl = document.getElementById('nameFirst');
     inpEl?.focus();
-};
+}
 
 function refreshFamilyInspector() {
-    localStorage.setItem(
-        'selectedFamily',
-        selectedFamily !== null ? '' + selectedFamily : 'null',
-    );
     familyInspector.innerHTML = '';
 
     if (selectedFamily === null) {
@@ -457,45 +460,34 @@ function select(e: MouseEvent) {
     let type = target.attributes.getNamedItem('data-type')?.value;
 
     if (type === 'person') {
-        if (id === undefined) {
-            selectedPerson = null;
-            refreshPersonInspector();
-            return;
-        }
+        let newSelectedPerson = id === undefined ? null : parseInt(id) as PersonId
+        // Toggle selection if the same person was clicked
+        selectedPerson = newSelectedPerson === selectedPerson ? null : newSelectedPerson
+        storeSelectedPersonInLocalStorage(selectedPerson)
 
-        selectedPerson = parseInt(id);
         refreshPersonInspector();
+        refreshPersonList();
+        focusPersonInspector()
     } else if (type === 'family') {
-        if (id === undefined) {
-            selectedFamily = null;
-            refreshFamilyInspector();
-            return;
-        }
+        let newSelectedFamily = id === undefined ? null : parseInt(id) as FamilyId
+        // Toggle selection if the same family was clicked
+        selectedFamily = newSelectedFamily === selectedFamily ? null : newSelectedFamily
+        storeSelectedFamilyInLocalStorage(selectedFamily)
 
-        selectedFamily = parseInt(id);
         refreshFamilyInspector();
+        refreshFamilyList();
     }
-
-    refreshPersonList();
-    refreshFamilyList();
 }
 
-let openedFile = new Slackt();
 
-let selectedPerson: number | null = null;
-let sp = localStorage.getItem('selectedPerson');
-if (sp !== null && sp !== 'null') selectedPerson = parseInt(sp);
-
-let selectedFamily: number | null = null;
-let sf = localStorage.getItem('selectedFamily');
-if (sf !== null && sf !== 'null') selectedFamily = parseInt(sf);
-
-let fromLS = localStorage.getItem('openedFile');
-if (fromLS) {
-    openedFile = Slackt.fromString(fromLS);
-}
+let openedFile: Slackt = retrieveFileFromLocalStorage()
+let selectedPerson: PersonId | null = retrieveLastSelectedPerson(openedFile)
+let selectedFamily: FamilyId | null = retrieveLastSelectedFamily(openedFile)
 
 refreshPersonList();
 refreshFamilyList();
 refreshPersonInspector();
 refreshFamilyInspector();
+
+scrollToSelectedPerson()
+scrollToSelectedFamily()

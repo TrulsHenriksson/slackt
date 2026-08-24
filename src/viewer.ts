@@ -1,10 +1,19 @@
 import {
     Slackt,
-    open,
-    download,
-    clear,
     Person,
+    FamilyId,
 } from './typesnmethods.js';
+import { 
+    download,
+    open,
+    tryClear,
+    assertElementsExist,
+    retrieveFileFromLocalStorage,
+    retrieveLastSelectedFamily,
+    storeFileInLocalStorage,
+    storeSelectedFamilyInLocalStorage,
+} from "./io.js";
+
 
 function refresh() {
     familySelectEl.innerHTML =
@@ -128,38 +137,46 @@ function infoBox(person: Person | undefined, role: 'husband' | 'wife' | 'child')
 const openButton = document.getElementById('open')!;
 const saveButton = document.getElementById('save')!;
 const clearButton = document.getElementById('clear')!;
-
-openButton.addEventListener('change', async (e) => {
-    openedFile = (await open(e, openedFile)) || openedFile;
-    refresh();
-});
-saveButton.onclick = () => download(openedFile);
-clearButton.onclick = () => {
-    openedFile = clear();
-    refresh();
-};
-
 const familySelectEl = document.getElementById(
     'selectFamily',
 ) as HTMLSelectElement;
+const mainArea = document.getElementById('viewer')!;
 
-familySelectEl.onchange = (e) => {
-    let target = e.target as HTMLSelectElement;
-    selectedFamily = parseInt(target.value);
-    localStorage.setItem('selectedFamily', target.value);
+assertElementsExist([
+    openButton,
+    saveButton,
+    clearButton,
+    familySelectEl,
+    mainArea
+])
+
+openButton.addEventListener('change', async (e) => {
+    openedFile = (await open(e, openedFile)) ?? openedFile;
+    storeFileInLocalStorage(openedFile)
+    refresh();
+});
+saveButton.onclick = () => {
+    download(openedFile);
+}
+clearButton.onclick = () => {
+    const newFile = tryClear();
+    if (newFile === undefined)
+        return
+
+    openedFile = newFile;
+    storeFileInLocalStorage(openedFile)
     refresh();
 };
 
-const mainArea = document.getElementById('viewer')!;
+familySelectEl.onchange = (e) => {
+    let target = e.target as HTMLSelectElement;
+    selectedFamily = parseInt(target.value) as FamilyId;
+    storeSelectedFamilyInLocalStorage(selectedFamily)
+    refresh();
+};
 
-let openedFile = new Slackt();
-let fromLS = localStorage.getItem('openedFile');
-if (fromLS) {
-    openedFile = Slackt.fromString(fromLS);
-}
 
-let selectedFamily: number | null = null;
-let sf = localStorage.getItem('selectedFamily');
-if (sf !== null && sf !== 'null') selectedFamily = parseInt(sf);
+let openedFile: Slackt = retrieveFileFromLocalStorage()
+let selectedFamily: FamilyId | null = retrieveLastSelectedFamily(openedFile)
 
 refresh();

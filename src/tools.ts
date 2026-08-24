@@ -1,11 +1,20 @@
 import {
     Slackt,
-    open,
-    download,
-    clear,
-    FindDirectRelatives,
     Person,
+    PersonId,
+    FindDirectRelatives,
 } from './typesnmethods.js';
+import {
+    download,
+    open,
+    tryClear,
+    assertElementsExist,
+    retrieveFileFromLocalStorage,
+    retrieveLastSelectedPerson,
+    storeFileInLocalStorage,
+    storeSelectedPersonInLocalStorage,
+} from "./io.js";
+
 
 function refresh() {
     personSelectEl.innerHTML =
@@ -31,7 +40,7 @@ const personSelectEl = document.getElementById(
 ) as HTMLSelectElement;
 const mainArea = document.getElementById('viewer')!;
 
-[
+assertElementsExist([
     openButton,
     saveButton,
     clearButton,
@@ -39,27 +48,31 @@ const mainArea = document.getElementById('viewer')!;
     //listFamilyButton,
     personSelectEl,
     mainArea,
-].forEach((element) => {
-    if (!element) throw new Error();
-});
+])
 
 openButton.addEventListener('change', async (e) => {
-    openedFile = (await open(e, openedFile)) || openedFile;
+    openedFile = (await open(e, openedFile)) ?? openedFile;
+    storeFileInLocalStorage(openedFile)
     refresh();
 });
 saveButton.onclick = () => download(openedFile);
 clearButton.onclick = () => {
-    openedFile = clear();
+    const newFile = tryClear();
+    if (newFile === undefined)
+        return
+
+    openedFile = newFile;
+    storeFileInLocalStorage(openedFile)
     refresh();
 };
 
 listNetworkButton.onclick = () => {
-    let networksSet: Set<number>[] = [];
+    let networksSet: Set<PersonId>[] = [];
     for (let i = 0; i < openedFile.people.length; i++) {
         if (networksSet.some((n) => n.has(openedFile.people[i].id))) continue;
 
         let p = openedFile.people[i];
-        let network = analysePerson(p, new Set<number>());
+        let network = analysePerson(p, new Set<PersonId>());
         networksSet.push(network);
     }
 
@@ -120,7 +133,7 @@ listNetworkButton.onclick = () => {
     }
 };
 
-function analysePerson(p: Person, counted: Set<number>) {
+function analysePerson(p: Person, counted: Set<PersonId>): Set<PersonId> {
     counted.add(p.id);
     FindDirectRelatives(openedFile, p.id)
         .filter((p) => !counted.has(p))
@@ -133,19 +146,12 @@ function analysePerson(p: Person, counted: Set<number>) {
 
 personSelectEl.onchange = (e) => {
     let target = e.target as HTMLSelectElement;
-    selectedPerson = parseInt(target.value);
-    localStorage.setItem('selectedPerson', target.value);
+    selectedPerson = parseInt(target.value) as PersonId;
+    storeSelectedPersonInLocalStorage(selectedPerson)
     refresh();
 };
 
-let openedFile = new Slackt();
-let fromLS = localStorage.getItem('openedFile');
-if (fromLS) {
-    openedFile = Slackt.fromString(fromLS);
-}
-
-let selectedPerson: number | null = null;
-let sf = localStorage.getItem('selectedPerson');
-if (sf !== null && sf !== 'null') selectedPerson = parseInt(sf);
+let openedFile: Slackt = retrieveFileFromLocalStorage()
+let selectedPerson: PersonId | null = retrieveLastSelectedPerson(openedFile)
 
 refresh();
