@@ -97,6 +97,17 @@ export class Person {
     copy(): Person {
         return Object.assign(new Person(this.id), this)
     }
+
+    /** Return how "specific" this person is, i.e. how many of its fields are filled in. */
+    specificity(): number {
+        return [
+            this.nameFirst !== "",
+            this.nameLast !== "",
+            this.nameLastMaiden !== "",
+            this.dateBirth !== "",
+            this.dateDeath !== "",
+        ].reduce((partialSum, a) => partialSum + (a ? 1 : 0), 0)
+    }
 };
 
 export class Family {
@@ -123,15 +134,23 @@ export class Family {
         this.dateStart = dateStart
     }
 
-    /** Format the family string using the given Slackt file. */
-    formatFamily(s: Slackt) {
+    /** Format the family string using the given Slackt file. 
+     * 
+     *  `type="full"` adds the last name, and `type="extra"` adds the family id.
+    */
+    formatFamily(s: Slackt, type: "short" | "full" | "extra" = "extra") {
         let husband = this.husband !== null ? s.findPerson(this.husband) : null;
         let wife = this.wife !== null ? s.findPerson(this.wife) : null;
         let husbandName = husband ? husband.formatName() : null;
         let wifeName = wife ? wife.formatName() : null;
         let childrenNames = this.children.map((c) => s.findPerson(c)?.formatName());
 
-        return `#${this.id} (${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
+        let result = `${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
+        if (type === "full" || type === "extra")
+            result = `(${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ` + result
+        if (type === "extra")
+            result = `#${this.id} ` + result
+        return result;
     }
 
     updateFrom(other: Family) {

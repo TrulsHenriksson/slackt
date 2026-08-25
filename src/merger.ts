@@ -1,4 +1,12 @@
 import {
+    open,
+    assertElementsExist,
+    retrieveFileFromLocalStorage,
+    storeFileInLocalStorage,
+    download,
+    tryClear
+} from './io.js';
+import {
     Slackt,
     Person,
     Family,
@@ -7,6 +15,170 @@ import {
     map_append,
 } from './typesnmethods.js';
 
+
+const openButton = document.getElementById('open')!
+const saveButton = document.getElementById('save')!
+const clearButton = document.getElementById('clear')!
+const mergeFromButton = document.getElementById('importFrom')!;
+const mergeTable = document.getElementById('mergerTable')! as HTMLTableElement
+const mergeTableBody = document.getElementById('mergerTableBody')! as HTMLTableSectionElement
+// Make sure all of them exist
+assertElementsExist([
+    openButton,
+    saveButton,
+    clearButton,
+    mergeFromButton,
+    mergeTable,
+    mergeTableBody,
+])
+
+
+openButton.addEventListener('change', async (e) => {
+    const newFile = await open(e);
+    if (newFile === undefined)
+        return
+
+    openedFile = newFile
+    storeFileInLocalStorage(openedFile)
+
+    updateMergeMapping()
+    refresh()
+});
+saveButton.onclick = () => {
+    download(openedFile);
+}
+clearButton.onclick = () => {
+    const newFile = tryClear();
+    if (newFile === undefined)
+        return
+
+    openedFile = newFile
+    storeFileInLocalStorage(openedFile)
+
+    updateMergeMapping()
+    refresh()
+};
+mergeFromButton.addEventListener("change", async (e) => {
+    const newFile = await open(e)
+    if (newFile === undefined)
+        return
+
+    mergeSourceFile = newFile
+
+    updateMergeMapping()
+    refresh()
+})
+
+
+
+function updateMergeMapping() {
+    if (mergeSourceFile === null) {
+        // Map each target person to no source people
+        mergeMapping = new Map(openedFile.people.map(p => [p.id, [[], null]]))
+    } else {
+        mergeMapping = identifyCandidates(openedFile, mergeSourceFile)
+    }
+}
+
+/** Use the mergeMapping to display each person with candidates in the table. */
+function refresh() {
+    mergeTableBody.innerHTML = ""
+
+    let sortedPeople = openedFile.people
+        .sort(
+            (p1, p2) => p1.formatName("full").localeCompare(p2.formatName("full"))
+        )
+    let zeroCandidates = sortedPeople.filter((p) => mergeMapping.get(p.id)![0].length === 0)
+    let oneCandidate = sortedPeople.filter((p) => mergeMapping.get(p.id)![0].length === 1)
+    let manyCandidates = sortedPeople.filter((p) => mergeMapping.get(p.id)![0].length > 1)
+
+    const sections: [Person[], string][] = [
+        [manyCandidates, `Personer med flera möjliga källpersoner (${manyCandidates.length})`],
+        [zeroCandidates, `Personer utan möjliga källpersoner (${zeroCandidates.length})`],
+        [oneCandidate, `Personer med bara en möjlig källperson (${oneCandidate.length})`]
+    ]
+    for (const [targetPersonList, caption] of sections) {
+        const sectionDivider = mergeTableBody.insertRow().insertCell()
+        sectionDivider.classList.add("divider")
+        sectionDivider.colSpan = 2
+        sectionDivider.innerText = caption
+
+        for (const targetPerson of targetPersonList) {
+            const newRow = mergeTableBody.insertRow()
+
+            const targetCell = newRow.insertCell()
+            targetCell.innerText = targetPerson.formatName("extra")
+
+            const sourceCell = newRow.insertCell()
+            const [candidateIds, preSelectedIndex] = mergeMapping.get(targetPerson.id)!;
+            for (let i = 0; i < candidateIds.length; i++) {
+                const candidateId = candidateIds[i]
+
+                const candidateContainer = document.createElement("div")
+                candidateContainer.classList.add("candidateContainer")
+                candidateContainer.setAttribute("data-personId", candidateId.toFixed())
+                if (i === preSelectedIndex)
+                    candidateContainer.classList.add("selected")
+
+                const candidateButton = document.createElement("button")
+                candidateButton.innerText = mergeSourceFile!.getPerson(candidateId).formatName("extra")
+                candidateButton.onclick = toggleSelected
+                candidateButton.classList.add("candidateButton")
+
+                const candidateInfoButton = document.createElement("button")
+                candidateInfoButton.innerText = "ⓘ"
+                candidateInfoButton.onclick = updateCandidateInfo
+                candidateInfoButton.setAttribute("popovertarget", "candidateInfoBox")
+                candidateInfoButton.classList.add("infoButton")
+
+                candidateContainer.appendChild(candidateButton)
+                candidateContainer.appendChild(candidateInfoButton)
+
+                sourceCell.appendChild(candidateContainer)
+            }
+        }
+    }
+}
+
+function toggleSelected(e: PointerEvent) {
+    if (!(e.target instanceof HTMLButtonElement))
+        return
+
+    const candidateContainer = e.target.parentElement! as HTMLDivElement
+    const sourceCell = candidateContainer.parentElement as HTMLTableCellElement
+    const wasSelected = candidateContainer.classList.contains("selected")
+    for (const child of sourceCell.children) {
+        (child as HTMLDivElement).classList.remove("selected")
+    }
+    if (!wasSelected)
+        candidateContainer.classList.add("selected")
+}
+
+function updateCandidateInfo(e: PointerEvent) {
+    if (!(e.target instanceof HTMLButtonElement))
+        return
+    if (mergeSourceFile === null)
+        return
+
+    const candidateContainer = e.target.parentElement! as HTMLDivElement
+    const personId = Number(candidateContainer.getAttribute("data-personId")) as PersonId
+    const person = mergeSourceFile.getPerson(personId)
+    const parents = mergeSourceFile.getParentsFromChild(personId)
+    const families = mergeSourceFile.getFamiliesFromParent(personId)
+    // Update the <p> elements in the popover div (#candidateInfoBox)
+    document.getElementById("firstNameInfo")!.innerText = (
+        `Förnamn: ${person.nameFirst}`
+    )
+    document.getElementById("lastNamesInfo")!.innerText = (
+        `Efternamn: ${person.nameLast}` + (person.nameLastMaiden !== "" ? ` (f. ${person.nameLastMaiden})` : "")
+    )
+    document.getElementById("parentsInfo")!.innerText = (
+        "Föräldrar: " + parents.map(p => p === undefined ? "?" : p.formatName("full")).join(", ")
+    )
+    document.getElementById("familyInfo")!.innerText = (
+        "Egen familj: " + families.map(f => f.formatFamily(mergeSourceFile!, "short")).join("; ")
+    )
+}
 
 
 /** Make a map from first names to the people with that name */
@@ -89,6 +261,39 @@ function exactly_same_person(targetPerson: Person, sourcePerson: Person): boolea
         && targetPerson.dateDeath === sourcePerson.dateDeath
     )
 }
+
+
+/** Get a map from a target person's id to the ids of source people that could be the same person. */
+function identifyCandidates(target: Slackt, source: Slackt): Map<PersonId, [PersonId[], number | null]> {
+    let nameToSourcePeople = groupFirstNames(source.people)
+    let candidateMap: Map<PersonId, [PersonId[], number | null]> = new Map()
+    for (const targetPerson of target.people) {
+        let candidates = (
+            nameToSourcePeople.get(targetPerson.nameFirst) ?? []
+        )
+            .filter((id) => possibly_same_person(target, source, targetPerson, source.getPerson(id)))
+            .map((id) => source.getPerson(id))
+
+        // Index of the candidate to preselect, if any.
+        let preSelectedIndex: number | null = null
+        // If there is a perfect candidate, map only to that one.
+        let perfectCandidateIndex = candidates.findIndex((candidate) => exactly_same_person(targetPerson, candidate))
+        if (perfectCandidateIndex !== -1) {
+            let [perfectCandidate] = candidates.splice(perfectCandidateIndex);
+            candidates = [perfectCandidate].concat(candidates)
+            preSelectedIndex = 0
+        } else if (candidates.length === 1) {
+            preSelectedIndex = 0
+        } else {
+            // Sort by how specific the candidates are (descending)
+            candidates.sort((p1, p2) => p2.specificity() - p1.specificity())
+        }
+
+        candidateMap.set(targetPerson.id, [candidates.map(p => p.id), preSelectedIndex])
+    }
+    return candidateMap
+}
+
 
 /**
   * Find people in the source and target files with the same first
@@ -371,3 +576,12 @@ function logFamilyUncertaintyTable(mapping: Map<FamilyId, FamilyId[]>, to: Slack
     }
     console.table(tableData)
 }
+
+
+let openedFile = retrieveFileFromLocalStorage()
+let mergeSourceFile: Slackt | null = null
+
+let mergeMapping: Map<PersonId, [PersonId[], number | null]>
+updateMergeMapping()
+
+refresh()

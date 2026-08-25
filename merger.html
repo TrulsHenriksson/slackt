@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="./src/style.css" />
+        <script type="module" src="./dist/merger.js"></script>
+        <title>Slackt - Fyrgeit.se</title>
+    </head>
+    <body>
+        <header>
+            <h1>Slackt</h1>
+            <h2><a href="index.html">Redigerare</a></h2>
+            <h2><a href="viewer.html">Utforskare</a></h2>
+            <h2><a href="tools.html">Verktyg</a></h2>
+            <h2>Importerare</h2>
+            <p>Tillbaka till <a href="https://fyrgeit.se">Fyrgeit.se</a></p>
+        </header>
+
+        <div id="menuButtons">
+            <button
+                class="textButton"
+                onclick="document.getElementById('open').click()"
+            >
+                Öppna
+            </button>
+            <input type="file" id="open" accept=".json" style="display: none" />
+            <button class="textButton" id="save">Spara</button>
+            <button class="textButton" id="clear">Rensa</button>
+            <br />
+            <button class="textButton" onclick="document.getElementById('importFrom').click()">
+                Importera från
+            </button>
+            <input type="file" id="importFrom" accept=".json" style="display: none" />
+            <button class="textButton">Slutför importering</button>
+        </div>
+
+        <main class="grow">
+            <div id="tableContainer">
+                <table id="mergerTable">
+                    <thead>
+                        <tr>
+                            <th>Person i den öppna filen</th>
+                            <th>Person att importera från</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mergerTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div id="candidateInfoBox" popover="auto">
+                <ul>
+                    <li><p id="firstNameInfo">Förnamn:</p></li>
+                    <li><p id="lastNamesInfo">Efternamn:</p></li>
+                    <li><p id="parentsInfo">Föräldrar:</p></li>
+                    <li><p id="familyInfo">Familj:</p></li>
+                </ul>
+            </div>
+        </main>
+    </body>
+    </html>
+    

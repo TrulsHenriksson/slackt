@@ -51,7 +51,7 @@ assertElementsExist([
 
 
 openButton.addEventListener('change', async (e) => {
-    const newFile = await open(e, openedFile);
+    const newFile = await open(e);
     if (newFile === undefined)
         return
 

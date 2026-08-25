@@ -51,7 +51,7 @@ assertElementsExist([
 ])
 
 openButton.addEventListener('change', async (e) => {
-    openedFile = (await open(e, openedFile)) ?? openedFile;
+    openedFile = (await open(e)) ?? openedFile;
     storeFileInLocalStorage(openedFile)
     refresh();
 });

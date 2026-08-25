@@ -112,11 +112,17 @@ button:hover {
 .textButton {
     background-color: #0c0;
     padding-inline: 0.6rem;
+    margin-bottom: 0.2rem;
 }
 
 .textButton:hover {
     background-color: #084;
     transform: none;
+}
+
+.textButton:disabled {
+    background-color: #677e67;  /* AAAAH GET OUT OF MY HEAD */
+    cursor: default;
 }
 
 form.person {
@@ -210,4 +216,83 @@ form.family {
     padding: 0.05rem;
     padding-top: 0;
     border-radius: 0 0 0.3rem 0.3rem;
+}
+
+#tableContainer {
+    display: flex;
+    flex-flow: column;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    margin: 1em 0;
+    padding: 0 1em;
+}
+
+table#mergerTable {
+    border-spacing: 0;
+    border: 2px solid rgb(140 140 140);
+    overflow: auto;
+}
+
+tbody {
+    white-space: nowrap;
+}
+
+tbody > tr:nth-of-type(even) {
+    background-color: rgb(237 238 242);
+}
+
+thead > tr {
+    background-color: rgb(228, 245, 230);
+    border-bottom: 1px solid rgb(140 140 140);
+    position: sticky;
+    top: 0;
+}
+
+th, td {
+    border: 1px solid rgb(160 160 160);
+    padding: 4px 6px;
+}
+
+th {
+    vertical-align: bottom;
+    position: sticky;
+    top: 0;
+    width: 50%;
+}
+
+td:nth-of-type(1) {
+    text-align: right;
+}
+
+td.divider {
+    text-align: center;
+    padding: 4px 2px;
+    background-color: #aaa;
+    font-weight: bolder;
+}
+
+div.candidateContainer {
+    display: inline-flex;
+    margin-right: 4px;
+    border-radius: 0.5rem;
+}
+
+div.candidateContainer > button.candidateButton {
+    padding: 2px;
+    transform: none;
+    border-radius: 0.4rem 0 0 0.4rem;
+}
+
+button.infoButton {
+    transform: none;
+    border-radius: 0 0.4rem 0.4rem 0;
+}
+
+div.selected {
+    border: 2px solid black;
+}
+
+#candidateInfoBox {
+    position-area: right;
+    inset: auto;
 }

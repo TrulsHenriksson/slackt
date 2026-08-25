@@ -113,7 +113,7 @@ export function download(file: Slackt) {
 
 
 /** Open and return a new file. If it fails, return undefined. */
-export async function open(e: Event, openedFile: Slackt): Promise<Slackt | undefined> {
+export async function open(e: Event): Promise<Slackt | undefined> {
     if (!(e.target instanceof HTMLInputElement)) 
         return undefined
 
@@ -124,29 +124,16 @@ export async function open(e: Event, openedFile: Slackt): Promise<Slackt | undef
         return undefined;
     }
     try {
-        openedFile = Slackt.fromString(text);
+        return Slackt.fromString(text);
     } catch (error) {
         console.error('Fel på filen', error);
-    }
-
-    if (openedFile) {
-        return openedFile;
+        return undefined
     }
 }
 
 
-let timeStampLastClickedClear = 0
-
-/** Return a blank file. If the clear button was pressed more than 2 seconds ago, show an alert first. */
+/** Return a blank file if the user confirms the dialog. */
 export function tryClear(): Slackt | undefined {
-    // Click twice within 2 seconds to clear
-    if (Date.now() - timeStampLastClickedClear < 2000) {
-        let newFile = new Slackt();
-        return newFile;
-    } else {
-        alert(
-            'Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.',
-        );
-    }
-    timeStampLastClickedClear = Date.now();
+    if (window.confirm("Vill du verkligen ta bort alla personer och familjer?"))
+        return new Slackt()
 }
