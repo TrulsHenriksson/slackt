@@ -48,6 +48,7 @@ async function upload() {
         <h2><RouterLink to="/editor">Redigerare</RouterLink></h2>
         <h2><RouterLink to="/viewer">Utforskare</RouterLink></h2>
         <h2><RouterLink to="/tools">Verktyg</RouterLink></h2>
+        <h2><RouterLink to="/account">Konto</RouterLink></h2>
         <p>Tillbaka till <a href="https://fyrgeit.se">Fyrgeit.se</a></p>
     </header>
     <div id="menuButtons" class="hcont">

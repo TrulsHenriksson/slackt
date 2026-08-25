@@ -4,6 +4,7 @@ import Guide from './views/Guide.vue';
 import Editor from './views/Editor.vue';
 import Viewer from './views/Viewer.vue';
 import Tools from './views/Tools.vue';
+import Account from './views/Account.vue';
 
 const router = createRouter({
     history: createWebHashHistory(),
@@ -12,6 +13,7 @@ const router = createRouter({
         { path: '/editor', component: Editor },
         { path: '/viewer', component: Viewer },
         { path: '/tools', component: Tools },
+        { path: '/account', component: Account },
     ],
 });
 
