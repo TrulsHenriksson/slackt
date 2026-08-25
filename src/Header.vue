@@ -2,10 +2,12 @@
 import { Tree, download as downloadFile, open } from './typesnmethods';
 import { ref } from 'vue';
 import { supabase } from './supabase';
+import { Session } from '@supabase/supabase-js';
 
-const workingTree = defineModel<Tree>({
+const workingTree = defineModel<Tree>('workingTree', {
     required: true,
 });
+const session = defineModel<Session | null>('session', { required: true });
 
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -50,6 +52,8 @@ async function upload() {
         <h2><RouterLink to="/tools">Verktyg</RouterLink></h2>
         <h2><RouterLink to="/account">Konto</RouterLink></h2>
         <p>Tillbaka till <a href="https://fyrgeit.se">Fyrgeit.se</a></p>
+        <p v-if="session">Inloggad som: {{ session.user.email }}</p>
+        <p v-else>Inte inloggad</p>
     </header>
     <div id="menuButtons" class="hcont">
         <button class="textButton" @click="fileInput?.click()">Öppna</button>
@@ -64,8 +68,15 @@ async function upload() {
             Spara
         </button>
         <button @click="clear" class="textButton">Rensa</button>
-        <button @click="upload" class="textButton">Ladda upp</button>
-        <input v-model="commentField" type="text" placeholder="Meddelande..." />
+        <button @click="upload" class="textButton" :disabled="!session">
+            Ladda upp
+        </button>
+        <input
+            v-model="commentField"
+            type="text"
+            placeholder="Meddelande..."
+            :disabled="!session"
+        />
     </div>
 </template>
 

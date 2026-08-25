@@ -7,21 +7,18 @@ import { Session } from '@supabase/supabase-js';
 const workingTree = defineModel<Tree>('workingTree', {
     required: true,
 });
-
 const selectedPersonId = defineModel<number | null>('selectedPersonId', {
     required: true,
 });
-
 const selectedFamilyId = defineModel<number | null>('selectedFamilyId', {
     required: true,
 });
+const session = defineModel<Session | null>('session', { required: true });
 
 const signUpEmail = ref('');
 const signUpPassword = ref('');
 const signInEmail = ref('');
 const signInPassword = ref('');
-
-const session = ref<Session | null>(null);
 
 async function signUp() {
     const { data, error } = await supabase.auth.signUp({
@@ -48,16 +45,6 @@ async function signOut() {
 
     console.log(error);
 }
-
-supabase.auth.onAuthStateChange(async () => {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
-        session.value = null;
-        return;
-    }
-
-    session.value = data.session;
-});
 </script>
 
 <template>
