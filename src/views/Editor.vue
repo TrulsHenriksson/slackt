@@ -295,7 +295,7 @@ function moveChild(id: number, step: number) {
                                 {{
                                     selectedFamilyMembers.husband?.formatName(
                                         'full',
-                                    ) ?? ''
+                                    ) ?? '?'
                                 }}
                             </p>
                             <button
@@ -321,7 +321,7 @@ function moveChild(id: number, step: number) {
                                 {{
                                     selectedFamilyMembers.wife?.formatName(
                                         'full',
-                                    ) ?? ''
+                                    ) ?? '?'
                                 }}
                             </p>
                             <button
