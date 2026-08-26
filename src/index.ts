@@ -467,6 +467,7 @@ function select(e: MouseEvent) {
 
         refreshPersonInspector();
         refreshPersonList();
+        scrollToSelectedPerson()
         focusPersonInspector()
     } else if (type === 'family') {
         let newSelectedFamily = id === undefined ? null : parseInt(id) as FamilyId
@@ -476,6 +477,7 @@ function select(e: MouseEvent) {
 
         refreshFamilyInspector();
         refreshFamilyList();
+        scrollToSelectedFamily()
     }
 }
 

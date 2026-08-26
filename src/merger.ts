@@ -86,10 +86,16 @@ function updateMergeMapping() {
 function refresh() {
     mergeTableBody.innerHTML = ""
 
-    if (mergeSourceFile === null)
+    if (mergeSourceFile === null) {
+        const missingMessage = mergeTableBody.insertRow().insertCell()
+        missingMessage.classList.add("divider")
+        missingMessage.colSpan = 2
+        missingMessage.innerText = "Inga personer att importera. Tryck på \"Importera från\" för att börja."
         return
+    }
 
     let sortedPeople = mergeSourceFile.people
+        .slice()
         .sort(
             (p1, p2) => p1.formatName("full").localeCompare(p2.formatName("full"))
         )
@@ -112,37 +118,53 @@ function refresh() {
             const newRow = mergeTableBody.insertRow()
 
             const sourceCell = newRow.insertCell()
-            sourceCell.innerText = sourcePerson.formatName("full")
+            sourceCell.appendChild(
+                getPersonSelectElement(
+                    sourcePerson, 
+                    true, 
+                    (e) => updateCandidateInfo(e, mergeSourceFile!)
+                )
+            )
+            // sourceCell.innerText = sourcePerson.formatName("full")
 
             const targetCell = newRow.insertCell()
             const [candidateIds, preSelectedIndex] = mergeMapping.get(sourcePerson.id)!;
             for (let i = 0; i < candidateIds.length; i++) {
-                const candidateId = candidateIds[i]
+                const candidate = openedFile.getPerson(candidateIds[i])
 
-                const candidateContainer = document.createElement("div")
-                candidateContainer.classList.add("candidateContainer")
-                candidateContainer.setAttribute("data-personId", candidateId.toFixed())
-                if (i === preSelectedIndex)
-                    candidateContainer.classList.add("selected")
-
-                const candidateButton = document.createElement("button")
-                candidateButton.innerText = openedFile.getPerson(candidateId).formatName("extra")
-                candidateButton.onclick = toggleSelected
-                candidateButton.classList.add("candidateButton")
-
-                const candidateInfoButton = document.createElement("button")
-                candidateInfoButton.innerText = "ⓘ"
-                candidateInfoButton.onclick = (e) => updateCandidateInfo(e, openedFile)
-                candidateInfoButton.setAttribute("popovertarget", "candidateInfoBox")
-                candidateInfoButton.classList.add("infoButton")
-
-                candidateContainer.appendChild(candidateButton)
-                candidateContainer.appendChild(candidateInfoButton)
-
-                targetCell.appendChild(candidateContainer)
+                targetCell.appendChild(
+                    getPersonSelectElement(
+                        candidate,
+                        i === preSelectedIndex, 
+                        (e) => updateCandidateInfo(e, openedFile)
+                    )
+                )
             }
         }
     }
+}
+
+function getPersonSelectElement(candidate: Person, preselected: boolean, infoOnClick: (e: PointerEvent) => void) {
+    const candidateContainer = document.createElement("div")
+    candidateContainer.classList.add("candidateContainer")
+    candidateContainer.setAttribute("data-personId", candidate.id.toFixed())
+    if (preselected)
+        candidateContainer.classList.add("selected")
+
+    const candidateButton = document.createElement("button")
+    candidateButton.innerText = candidate.formatName("extra")
+    candidateButton.onclick = toggleSelected
+    candidateButton.classList.add("candidateButton")
+
+    const candidateInfoButton = document.createElement("button")
+    candidateInfoButton.innerText = "ⓘ"
+    candidateInfoButton.onclick = infoOnClick
+    candidateInfoButton.setAttribute("popovertarget", "candidateInfoBox")
+    candidateInfoButton.classList.add("infoButton")
+
+    candidateContainer.appendChild(candidateButton)
+    candidateContainer.appendChild(candidateInfoButton)
+    return candidateContainer
 }
 
 function toggleSelected(e: PointerEvent) {
@@ -174,6 +196,12 @@ function updateCandidateInfo(e: PointerEvent, file: Slackt) {
     )
     document.getElementById("lastNamesInfo")!.innerText = (
         `Efternamn: ${person.nameLast}` + (person.nameLastMaiden !== "" ? ` (f. ${person.nameLastMaiden})` : "")
+    )
+    const dateInfo = document.getElementById("dateInfo")!;
+    dateInfo.parentElement!.setAttribute("display", person.dateBirth !== "" || person.dateDeath !== "" ? "inline" : "none")
+    dateInfo.innerText = (
+        "Född: " + (person.dateBirth === "" ? "?" : ` ${person.dateBirth}`) 
+        + (person.dateDeath === "" ? "" : ` Död: ${person.dateDeath}`)
     )
     document.getElementById("parentsInfo")!.innerText = (
         "Föräldrar: " + parents.map(p => p === undefined ? "?" : p.formatName("full")).join(", ")
@@ -239,7 +267,7 @@ function possibly_same_person(
             && !possibly_same_person(target, source, target_parents[i], source_parents[i], check_immediate_family=false)
         )
             return false
-        }
+    }
 
     let target_spouses = target.getSpousesFromParent(target_person.id)
     let source_spouses = source.getSpousesFromParent(source_person.id)
