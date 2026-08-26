@@ -55,6 +55,8 @@ clearButton.onclick = () => {
     openedFile = newFile
     storeFileInLocalStorage(openedFile)
 
+    mergeSourceFile = null
+
     updateMergeMapping()
     refresh()
 };
@@ -73,8 +75,8 @@ mergeFromButton.addEventListener("change", async (e) => {
 
 function updateMergeMapping() {
     if (mergeSourceFile === null) {
-        // Map each target person to no source people
-        mergeMapping = new Map(openedFile.people.map(p => [p.id, [[], null]]))
+        // Map each source person to no target people
+        mergeMapping = new Map()
     } else {
         mergeMapping = identifyCandidates(openedFile, mergeSourceFile)
     }
@@ -84,7 +86,10 @@ function updateMergeMapping() {
 function refresh() {
     mergeTableBody.innerHTML = ""
 
-    let sortedPeople = openedFile.people
+    if (mergeSourceFile === null)
+        return
+
+    let sortedPeople = mergeSourceFile.people
         .sort(
             (p1, p2) => p1.formatName("full").localeCompare(p2.formatName("full"))
         )
@@ -93,24 +98,24 @@ function refresh() {
     let manyCandidates = sortedPeople.filter((p) => mergeMapping.get(p.id)![0].length > 1)
 
     const sections: [Person[], string][] = [
-        [manyCandidates, `Personer med flera möjliga källpersoner (${manyCandidates.length})`],
-        [zeroCandidates, `Personer utan möjliga källpersoner (${zeroCandidates.length})`],
-        [oneCandidate, `Personer med bara en möjlig källperson (${oneCandidate.length})`]
+        [manyCandidates, `Personer med flera möjliga målpersoner (${manyCandidates.length})`],
+        [zeroCandidates, `Personer utan möjliga målpersoner (${zeroCandidates.length})`],
+        [oneCandidate, `Personer med bara en möjlig målperson (${oneCandidate.length})`]
     ]
-    for (const [targetPersonList, caption] of sections) {
+    for (const [sourcePersonList, caption] of sections) {
         const sectionDivider = mergeTableBody.insertRow().insertCell()
         sectionDivider.classList.add("divider")
         sectionDivider.colSpan = 2
         sectionDivider.innerText = caption
 
-        for (const targetPerson of targetPersonList) {
+        for (const sourcePerson of sourcePersonList) {
             const newRow = mergeTableBody.insertRow()
 
-            const targetCell = newRow.insertCell()
-            targetCell.innerText = targetPerson.formatName("extra")
-
             const sourceCell = newRow.insertCell()
-            const [candidateIds, preSelectedIndex] = mergeMapping.get(targetPerson.id)!;
+            sourceCell.innerText = sourcePerson.formatName("full")
+
+            const targetCell = newRow.insertCell()
+            const [candidateIds, preSelectedIndex] = mergeMapping.get(sourcePerson.id)!;
             for (let i = 0; i < candidateIds.length; i++) {
                 const candidateId = candidateIds[i]
 
@@ -121,20 +126,20 @@ function refresh() {
                     candidateContainer.classList.add("selected")
 
                 const candidateButton = document.createElement("button")
-                candidateButton.innerText = mergeSourceFile!.getPerson(candidateId).formatName("extra")
+                candidateButton.innerText = openedFile.getPerson(candidateId).formatName("extra")
                 candidateButton.onclick = toggleSelected
                 candidateButton.classList.add("candidateButton")
 
                 const candidateInfoButton = document.createElement("button")
                 candidateInfoButton.innerText = "ⓘ"
-                candidateInfoButton.onclick = updateCandidateInfo
+                candidateInfoButton.onclick = (e) => updateCandidateInfo(e, openedFile)
                 candidateInfoButton.setAttribute("popovertarget", "candidateInfoBox")
                 candidateInfoButton.classList.add("infoButton")
 
                 candidateContainer.appendChild(candidateButton)
                 candidateContainer.appendChild(candidateInfoButton)
 
-                sourceCell.appendChild(candidateContainer)
+                targetCell.appendChild(candidateContainer)
             }
         }
     }
@@ -154,17 +159,15 @@ function toggleSelected(e: PointerEvent) {
         candidateContainer.classList.add("selected")
 }
 
-function updateCandidateInfo(e: PointerEvent) {
+function updateCandidateInfo(e: PointerEvent, file: Slackt) {
     if (!(e.target instanceof HTMLButtonElement))
-        return
-    if (mergeSourceFile === null)
         return
 
     const candidateContainer = e.target.parentElement! as HTMLDivElement
     const personId = Number(candidateContainer.getAttribute("data-personId")) as PersonId
-    const person = mergeSourceFile.getPerson(personId)
-    const parents = mergeSourceFile.getParentsFromChild(personId)
-    const families = mergeSourceFile.getFamiliesFromParent(personId)
+    const person = file.getPerson(personId)
+    const parents = file.getParentsFromChild(personId)
+    const families = file.getFamiliesFromParent(personId)
     // Update the <p> elements in the popover div (#candidateInfoBox)
     document.getElementById("firstNameInfo")!.innerText = (
         `Förnamn: ${person.nameFirst}`
@@ -176,7 +179,7 @@ function updateCandidateInfo(e: PointerEvent) {
         "Föräldrar: " + parents.map(p => p === undefined ? "?" : p.formatName("full")).join(", ")
     )
     document.getElementById("familyInfo")!.innerText = (
-        "Egen familj: " + families.map(f => f.formatFamily(mergeSourceFile!, "short")).join("; ")
+        "Egen familj: " + families.map(f => f.formatFamily(file, "short")).join("; ")
     )
 }
 
@@ -263,22 +266,23 @@ function exactly_same_person(targetPerson: Person, sourcePerson: Person): boolea
 }
 
 
-/** Get a map from a target person's id to the ids of source people that could be the same person. */
+/** Get a map from a source person's id to the ids of target people that could be the same person. */
 function identifyCandidates(target: Slackt, source: Slackt): Map<PersonId, [PersonId[], number | null]> {
-    let nameToSourcePeople = groupFirstNames(source.people)
+    let nameToTargetPeople = groupFirstNames(target.people)
     let candidateMap: Map<PersonId, [PersonId[], number | null]> = new Map()
-    for (const targetPerson of target.people) {
+    for (const sourcePerson of source.people) {
         let candidates = (
-            nameToSourcePeople.get(targetPerson.nameFirst) ?? []
+            nameToTargetPeople.get(sourcePerson.nameFirst) ?? []
         )
-            .filter((id) => possibly_same_person(target, source, targetPerson, source.getPerson(id)))
-            .map((id) => source.getPerson(id))
+            .filter((id) => possibly_same_person(target, source, target.getPerson(id), sourcePerson))
+            .map((id) => target.getPerson(id))
 
         // Index of the candidate to preselect, if any.
         let preSelectedIndex: number | null = null
         // If there is a perfect candidate, map only to that one.
-        let perfectCandidateIndex = candidates.findIndex((candidate) => exactly_same_person(targetPerson, candidate))
+        let perfectCandidateIndex = candidates.findIndex((candidate) => exactly_same_person(sourcePerson, candidate))
         if (perfectCandidateIndex !== -1) {
+            // Put the perfect candidate first
             let [perfectCandidate] = candidates.splice(perfectCandidateIndex);
             candidates = [perfectCandidate].concat(candidates)
             preSelectedIndex = 0
@@ -289,7 +293,7 @@ function identifyCandidates(target: Slackt, source: Slackt): Map<PersonId, [Pers
             candidates.sort((p1, p2) => p2.specificity() - p1.specificity())
         }
 
-        candidateMap.set(targetPerson.id, [candidates.map(p => p.id), preSelectedIndex])
+        candidateMap.set(sourcePerson.id, [candidates.map(p => p.id), preSelectedIndex])
     }
     return candidateMap
 }
@@ -580,7 +584,7 @@ function logFamilyUncertaintyTable(mapping: Map<FamilyId, FamilyId[]>, to: Slack
 
 let openedFile = retrieveFileFromLocalStorage()
 let mergeSourceFile: Slackt | null = null
-
+/** Mapping from a source person (in mergeSourceFile) to a list of similar target people (in openedFile). */
 let mergeMapping: Map<PersonId, [PersonId[], number | null]>
 updateMergeMapping()
 
