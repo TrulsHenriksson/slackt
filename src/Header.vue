@@ -32,7 +32,7 @@ function clear() {
 
 async function upload() {
     let data = await supabase
-        .from('Trees')
+        .from('trees')
         .insert({
             data: workingTree.value.stringify(),
             comment: commentField.value,
@@ -46,7 +46,7 @@ async function upload() {
 
 <template>
     <header>
-        <h1>Slackt</h1>
+        <h1><RouterLink to="/"> Slackt </RouterLink></h1>
         <h2><RouterLink to="/editor">Redigerare</RouterLink></h2>
         <h2><RouterLink to="/viewer">Utforskare</RouterLink></h2>
         <h2><RouterLink to="/tools">Verktyg</RouterLink></h2>

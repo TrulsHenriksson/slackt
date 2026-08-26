@@ -10,7 +10,7 @@ export type Database = {
     // Allows to automatically instantiate createClient with right options
     // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
     __InternalSupabase: {
-        PostgrestVersion: '14.15';
+        PostgrestVersion: '14.17';
     };
     graphql_public: {
         Tables: {
@@ -39,7 +39,22 @@ export type Database = {
     };
     public: {
         Tables: {
-            Trees: {
+            profiles: {
+                Row: {
+                    id: string;
+                    role: string;
+                };
+                Insert: {
+                    id?: string;
+                    role?: string;
+                };
+                Update: {
+                    id?: string;
+                    role?: string;
+                };
+                Relationships: [];
+            };
+            trees: {
                 Row: {
                     by_user: string | null;
                     comment: string | null;
@@ -68,7 +83,10 @@ export type Database = {
             [_ in never]: never;
         };
         Functions: {
-            [_ in never]: never;
+            create_profiles_for_users_that_dont_have_already: {
+                Args: never;
+                Returns: undefined;
+            };
         };
         Enums: {
             [_ in never]: never;

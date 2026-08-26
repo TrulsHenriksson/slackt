@@ -62,6 +62,7 @@ async function signOut() {
                 placeholder="Lösenord"
             />
             <button type="submit">Skapa konto</button>
+            <p>Bekräfta sedan din mailadress</p>
         </form>
         <form @submit.prevent="signIn">
             <input v-model="signInEmail" type="text" placeholder="Email" />
