@@ -1,9 +1,7 @@
-// Aliases so they don't get mixed up with normal numbers
-type PersonId = number;
-type FamilyId = number;
+export type UUID = string;
 
 interface IPerson {
-    id: PersonId;
+    id: UUID;
     nameFirst: string;
     nameLast: string;
     nameLastMaiden: string;
@@ -11,16 +9,16 @@ interface IPerson {
     dateDeath: string;
 }
 interface IFamily {
-    id: FamilyId;
-    husband: PersonId | null;
-    wife: PersonId | null;
-    children: PersonId[];
+    id: UUID;
+    husband: UUID | null;
+    wife: UUID | null;
+    children: UUID[];
     nameLastOverride: string;
     dateStart: string;
 }
 
 export class Person {
-    id: PersonId;
+    id: UUID;
     nameFirst: string;
     nameLast: string;
     nameLastMaiden: string;
@@ -28,7 +26,7 @@ export class Person {
     dateDeath: string;
 
     constructor(
-        id: PersonId,
+        id: UUID,
         nameFirst: string = '',
         nameLast: string = '',
         nameLastMaiden: string = '',
@@ -67,18 +65,18 @@ export class Person {
 }
 
 export class Family {
-    id: FamilyId;
-    husband: PersonId | null;
-    wife: PersonId | null;
-    children: PersonId[];
+    id: UUID;
+    husband: UUID | null;
+    wife: UUID | null;
+    children: UUID[];
     nameLastOverride: string;
     dateStart: string;
 
     constructor(
-        id: FamilyId,
-        husband: PersonId | null = null,
-        wife: PersonId | null = null,
-        children: PersonId[] = [],
+        id: UUID,
+        husband: UUID | null = null,
+        wife: UUID | null = null,
+        children: UUID[] = [],
         nameLastOverride: string = '',
         dateStart: string = '',
     ) {
@@ -100,7 +98,7 @@ export class Family {
             s.findPerson(c)?.formatName(),
         );
 
-        return `#${this.id} (${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
+        return `(${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
     }
 
     asObject() {
@@ -121,17 +119,14 @@ export class Tree {
         this.families = families;
     }
 
-    addEmptyPerson(): PersonId {
-        let newId: PersonId = this.people[this.people.length - 1].id + 1;
+    addEmptyPerson(): UUID {
+        let newId: UUID = crypto.randomUUID();
         this.people.push(new Person(newId));
         return newId;
     }
 
-    addEmptyFamily(): FamilyId {
-        const newId: FamilyId =
-            this.families.length > 0
-                ? this.families[this.families.length - 1].id + 1
-                : 0;
+    addEmptyFamily(): UUID {
+        const newId: UUID = crypto.randomUUID();
 
         this.families.push(new Family(newId));
 
@@ -139,32 +134,32 @@ export class Tree {
     }
 
     /** Return the person with the given id, or undefined. */
-    findPerson(id: PersonId | null): Person | undefined {
+    findPerson(id: UUID | null): Person | undefined {
         return this.people.find((p) => p.id === id);
     }
 
     /** Get a person, and throw an error if it does not exist. */
-    getPerson(id: PersonId): Person {
+    getPerson(id: UUID): Person {
         let p = this.findPerson(id);
         if (p === undefined) throw new Error(`Person ${id} does not exist`);
         return p;
     }
 
     /** Return the family with the given id, or undefined. */
-    findFamily(id: FamilyId | null): Family | undefined {
+    findFamily(id: UUID | null): Family | undefined {
         return this.families.find((f) => f.id === id);
     }
 
     /** Get a family, and throw an error if it does not exist. */
-    getFamily(id: FamilyId): Family {
+    getFamily(id: UUID): Family {
         let p = this.findFamily(id);
         if (p === undefined) throw new Error(`Family ${id} does not exist`);
         return p;
     }
 
     addPersonToFamily(
-        familyId: FamilyId,
-        personId: PersonId | null,
+        familyId: UUID,
+        personId: UUID | null,
         role: 'husband' | 'wife' | 'child',
     ) {
         let family = this.getFamily(familyId);
@@ -204,7 +199,7 @@ export class Tree {
     }
 }
 
-export function FindDirectRelatives(s: Tree, personId: number) {
+export function FindDirectRelatives(s: Tree, personId: UUID) {
     let families = s.families.filter(
         (f) =>
             f.husband === personId ||
@@ -212,9 +207,7 @@ export function FindDirectRelatives(s: Tree, personId: number) {
             f.children.includes(personId),
     );
     let allFamilyMembers = families.flatMap((f) =>
-        [f.husband, f.wife, ...f.children].filter(
-            (id): id is number => id !== null,
-        ),
+        [f.husband, f.wife, ...f.children].filter((id) => id !== null),
     );
     return allFamilyMembers.filter((id) => id !== personId);
 }
@@ -264,8 +257,8 @@ export async function open(e: Event) {
     throw new Error('fel');
 }
 
-export function idFromString(str: string | null) {
-    if (str === null || str === 'null') return null;
+export function uuidFromString(str: UUID | null) {
+    if (str === null || str === '' || str === 'null') return null;
 
-    return parseInt(str);
+    return str;
 }

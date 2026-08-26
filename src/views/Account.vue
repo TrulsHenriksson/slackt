@@ -4,15 +4,6 @@ import { supabase } from '../supabase';
 import { Tree } from '../typesnmethods';
 import { Session } from '@supabase/supabase-js';
 
-const workingTree = defineModel<Tree>('workingTree', {
-    required: true,
-});
-const selectedPersonId = defineModel<number | null>('selectedPersonId', {
-    required: true,
-});
-const selectedFamilyId = defineModel<number | null>('selectedFamilyId', {
-    required: true,
-});
 const session = defineModel<Session | null>('session', { required: true });
 
 const signUpEmail = ref('');

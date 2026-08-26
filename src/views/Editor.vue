@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue';
-import { Tree } from '../typesnmethods.ts';
+import { Tree, UUID } from '../typesnmethods.ts';
 
 const workingTree = defineModel<Tree>('workingTree', {
     required: true,
 });
 
-const selectedPersonId = defineModel<number | null>('selectedPersonId', {
+const selectedPersonId = defineModel<UUID | null>('selectedPersonId', {
     required: true,
 });
 
-const selectedFamilyId = defineModel<number | null>('selectedFamilyId', {
+const selectedFamilyId = defineModel<UUID | null>('selectedFamilyId', {
     required: true,
 });
 
@@ -57,7 +57,7 @@ const selectedFamilyMembers = computed(() => {
     };
 });
 
-async function scrollToPerson(id: number | null) {
+async function scrollToPerson(id: UUID | null) {
     if (id === null) return;
 
     await nextTick();
@@ -68,7 +68,7 @@ async function scrollToPerson(id: number | null) {
     });
 }
 
-async function scrollToFamily(id: number | null) {
+async function scrollToFamily(id: UUID | null) {
     if (id === null) return;
 
     await nextTick();
@@ -97,7 +97,7 @@ async function addFamily() {
     scrollToFamily(newId);
 }
 
-function deletePerson(personId: number) {
+function deletePerson(personId: UUID) {
     const i = workingTree.value.people.findIndex((f) => f.id === personId);
 
     workingTree.value.people.splice(i, 1);
@@ -113,7 +113,7 @@ function deletePerson(personId: number) {
     });
 }
 
-function deleteFamily(familyId: number) {
+function deleteFamily(familyId: UUID) {
     const i = workingTree.value.families.findIndex((f) => f.id === familyId);
 
     workingTree.value.families.splice(i, 1);
@@ -121,7 +121,7 @@ function deleteFamily(familyId: number) {
     selectedFamilyId.value = workingTree.value.families[i - 1]?.id ?? null;
 }
 
-function moveChild(id: number, step: number) {
+function moveChild(id: UUID, step: number) {
     if (selectedFamily.value === null) return;
 
     let children = selectedFamily.value.children;
@@ -186,7 +186,7 @@ function moveChild(id: number, step: number) {
                         }
                     "
                 >
-                    {{ p.formatName('extra') }}
+                    {{ p.formatName('full') }}
                 </p>
             </div>
             <button class="textButton" @click="addPerson">

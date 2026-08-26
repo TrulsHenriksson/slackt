@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import Header from './Header.vue';
-import { Tree, idFromString } from './typesnmethods.ts';
+import { Tree, uuidFromString } from './typesnmethods.ts';
 import { supabase } from './supabase.ts';
 import { Session } from '@supabase/supabase-js';
+import type { UUID } from './typesnmethods.ts';
 
 const workingTree = ref(Tree.fromString(localStorage.getItem('openedFile')));
-const selectedPersonId = ref<number | null>(
-    idFromString(localStorage.getItem('selectedPerson')),
+const selectedPersonId = ref<UUID | null>(
+    uuidFromString(localStorage.getItem('selectedPerson')),
 );
-const selectedFamilyId = ref<number | null>(
-    idFromString(localStorage.getItem('selectedFamily')),
+const selectedFamilyId = ref<UUID | null>(
+    uuidFromString(localStorage.getItem('selectedFamily')),
 );
 const session = ref<Session | null>(null);
 
@@ -23,17 +24,11 @@ watch(
 );
 
 watch(selectedPersonId, (newVal) => {
-    localStorage.setItem(
-        'selectedPerson',
-        newVal === null ? '' : newVal.toString(),
-    );
+    localStorage.setItem('selectedPerson', newVal ?? '');
 });
 
 watch(selectedFamilyId, (newVal) => {
-    localStorage.setItem(
-        'selectedFamily',
-        newVal === null ? '' : newVal.toString(),
-    );
+    localStorage.setItem('selectedFamily', newVal ?? '');
 });
 
 supabase.auth.onAuthStateChange(async () => {
