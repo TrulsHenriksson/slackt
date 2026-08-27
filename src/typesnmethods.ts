@@ -1,9 +1,7 @@
-// Aliases so they don't get mixed up with normal numbers
-type PersonId = number
-type FamilyId = number
+export type UUID = string;
 
 interface IPerson {
-    id: PersonId;
+    id: UUID;
     nameFirst: string;
     nameLast: string;
     nameLastMaiden: string;
@@ -11,16 +9,16 @@ interface IPerson {
     dateDeath: string;
 }
 interface IFamily {
-    id: FamilyId;
-    husband: PersonId | null;
-    wife: PersonId | null;
-    children: PersonId[];
+    id: UUID;
+    husband: UUID | null;
+    wife: UUID | null;
+    children: UUID[];
     nameLastOverride: string;
     dateStart: string;
 }
 
 export class Person {
-    id: PersonId;
+    id: UUID;
     nameFirst: string;
     nameLast: string;
     nameLastMaiden: string;
@@ -28,34 +26,31 @@ export class Person {
     dateDeath: string;
 
     constructor(
-        id: PersonId,
+        id: UUID,
         nameFirst: string = '',
         nameLast: string = '',
         nameLastMaiden: string = '',
         dateBirth: string = '',
-        dateDeath: string = ''
+        dateDeath: string = '',
     ) {
-        this.id = id
-        this.nameFirst = nameFirst
-        this.nameLast = nameLast
-        this.nameLastMaiden = nameLastMaiden
-        this.dateBirth = dateBirth
-        this.dateDeath = dateDeath
+        this.id = id;
+        this.nameFirst = nameFirst;
+        this.nameLast = nameLast;
+        this.nameLastMaiden = nameLastMaiden;
+        this.dateBirth = dateBirth;
+        this.dateDeath = dateDeath;
     }
 
     formatName(type: 'short' | 'full' | 'extra' = 'short') {
-        if (type === 'short')
-            return this.nameFirst;
+        if (type === 'short') return this.nameFirst;
 
         let full = `${this.nameFirst} ${this.nameLast}${
             this.nameLastMaiden ? ` (f. ${this.nameLastMaiden})` : ''
         }`;
 
-        if (type === 'full')
-            return full;
+        if (type === 'full') return full;
 
-        if (type === 'extra')
-            return `#${this.id} ${full}`;
+        if (type === 'extra') return `#${this.id} ${full}`;
 
         return '';
     }
@@ -65,43 +60,45 @@ export class Person {
     }
 
     static fromObject(obj: IPerson): Person {
-        return Object.assign(new Person(obj.id), obj)
+        return Object.assign(new Person(obj.id), obj);
     }
-};
+}
 
 export class Family {
-    id: FamilyId;
-    husband: PersonId | null;
-    wife: PersonId | null;
-    children: PersonId[];
+    id: UUID;
+    husband: UUID | null;
+    wife: UUID | null;
+    children: UUID[];
     nameLastOverride: string;
     dateStart: string;
 
     constructor(
-        id: FamilyId,
-        husband: PersonId | null = null,
-        wife: PersonId | null = null,
-        children: PersonId[] = [],
+        id: UUID,
+        husband: UUID | null = null,
+        wife: UUID | null = null,
+        children: UUID[] = [],
         nameLastOverride: string = '',
         dateStart: string = '',
     ) {
-        this.id = id
-        this.husband = husband
-        this.wife = wife
-        this.children = children
-        this.nameLastOverride = nameLastOverride
-        this.dateStart = dateStart
+        this.id = id;
+        this.husband = husband;
+        this.wife = wife;
+        this.children = children;
+        this.nameLastOverride = nameLastOverride;
+        this.dateStart = dateStart;
     }
 
-    /** Format the family string using the given Slackt file. */
-    formatFamily(s: Slackt) {
+    /** Format the family string using the given Tree. */
+    formatFamily(s: Tree) {
         let husband = this.husband !== null ? s.findPerson(this.husband) : null;
         let wife = this.wife !== null ? s.findPerson(this.wife) : null;
         let husbandName = husband ? husband.formatName() : null;
         let wifeName = wife ? wife.formatName() : null;
-        let childrenNames = this.children.map((c) => s.findPerson(c)?.formatName());
+        let childrenNames = this.children.map((c) =>
+            s.findPerson(c)?.formatName(),
+        );
 
-        return `#${this.id} (${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
+        return `(${this.nameLastOverride || husband?.nameLast || wife?.nameLast || '?'}) ${husbandName ?? '?'} + ${wifeName ?? '?'}${childrenNames.length > 0 ? ' = ' + childrenNames.join(', ') : ''}`;
     }
 
     asObject() {
@@ -109,64 +106,71 @@ export class Family {
     }
 
     static fromObject(obj: IFamily): Family {
-        return Object.assign(new Family(obj.id), obj)
+        return Object.assign(new Family(obj.id), obj);
     }
-};
+}
 
-export class Slackt {
-    people: Person[]
-    families: Family[]
+export class Tree {
+    people: Person[];
+    families: Family[];
 
     constructor(people: Person[] = [], families: Family[] = []) {
-        this.people = people
-        this.families = families
+        this.people = people;
+        this.families = families;
     }
 
-    addEmptyPerson(): PersonId {
-        let newId: PersonId = this.people.length
-        this.people.push(new Person(newId))
-        return newId
+    addEmptyPerson(): UUID {
+        let newId: UUID = crypto.randomUUID();
+        this.people.push(new Person(newId));
+        return newId;
     }
 
-    addEmptyFamily(): FamilyId {
-        let newId: FamilyId = this.families.length
-        this.families.push(new Family(newId))
-        return newId
+    addEmptyFamily(): UUID {
+        const newId: UUID = crypto.randomUUID();
+
+        this.families.push(new Family(newId));
+
+        return newId;
     }
 
     /** Return the person with the given id, or undefined. */
-    findPerson(id: PersonId): Person | undefined {
-        return this.people.find((p) => p.id === id)
+    findPerson(id: UUID | null): Person | undefined {
+        return this.people.find((p) => p.id === id);
     }
 
     /** Get a person, and throw an error if it does not exist. */
-    getPerson(id: PersonId): Person {
-        let p = this.findPerson(id)
-        if (p === undefined)
-            throw new Error(`Person ${id} does not exist`)
-        return p
+    getPerson(id: UUID): Person {
+        let p = this.findPerson(id);
+        if (p === undefined) throw new Error(`Person ${id} does not exist`);
+        return p;
     }
 
     /** Return the family with the given id, or undefined. */
-    findFamily(id: FamilyId): Family | undefined {
-        return this.families.find((f) => f.id === id)
+    findFamily(id: UUID | null): Family | undefined {
+        return this.families.find((f) => f.id === id);
     }
 
     /** Get a family, and throw an error if it does not exist. */
-    getFamily(id: FamilyId): Family {
-        let p = this.findFamily(id)
-        if (p === undefined)
-            throw new Error(`Family ${id} does not exist`)
-        return p
+    getFamily(id: UUID): Family {
+        let p = this.findFamily(id);
+        if (p === undefined) throw new Error(`Family ${id} does not exist`);
+        return p;
     }
 
-    addPersonToFamily(familyId: FamilyId, personId: PersonId, role: 'husband' | 'wife' | 'child') {
-        let family = this.getFamily(familyId)
+    addPersonToFamily(
+        familyId: UUID,
+        personId: UUID | null,
+        role: 'husband' | 'wife' | 'child',
+    ) {
+        let family = this.getFamily(familyId);
 
         switch (role) {
-            case "husband": family.husband = personId
-            case "wife": family.husband = personId
-            case "child": family.children.push(personId)
+            case 'husband':
+                family.husband = personId;
+            case 'wife':
+                family.husband = personId;
+            case 'child':
+                if (personId !== null) family.children.push(personId);
         }
     }
 
@@ -174,27 +178,28 @@ export class Slackt {
         return {
             people: this.people.map((p) => p.asObject()),
             families: this.families.map((f) => f.asObject()),
-        }
+        };
     }
 
-    static fromObject(obj: {people: IPerson[], families: IFamily[]}) {
-        return new Slackt(
+    static fromObject(obj: { people: IPerson[]; families: IFamily[] }) {
+        return new Tree(
             obj.people.map((p) => Person.fromObject(p)),
-            obj.families.map((f) => Family.fromObject(f))
-        )
+            obj.families.map((f) => Family.fromObject(f)),
+        );
     }
 
     stringify(): string {
-        return JSON.stringify(this.asObject())
+        return JSON.stringify(this.asObject());
     }
 
-    static fromString(str: string): Slackt {
-        return Slackt.fromObject(JSON.parse(str))
+    static fromString(str: string | null): Tree {
+        if (str === null) return new Tree();
+
+        return Tree.fromObject(JSON.parse(str));
     }
 }
 
-
-export function FindDirectRelatives(s: Slackt, personId: number) {
+export function FindDirectRelatives(s: Tree, personId: UUID) {
     let families = s.families.filter(
         (f) =>
             f.husband === personId ||
@@ -202,16 +207,12 @@ export function FindDirectRelatives(s: Slackt, personId: number) {
             f.children.includes(personId),
     );
     let allFamilyMembers = families.flatMap((f) =>
-        [f.husband, f.wife, ...f.children].filter(
-            (id): id is number => id !== null,
-        ),
+        [f.husband, f.wife, ...f.children].filter((id) => id !== null),
     );
     return allFamilyMembers.filter((id) => id !== personId);
 }
 
-
-
-export function download(openedFile: Slackt) {
+export function download(openedFile: Tree) {
     const blob = new Blob([openedFile.stringify()], {
         type: 'application/json',
     });
@@ -235,29 +236,29 @@ export function download(openedFile: Slackt) {
     el.click();
 }
 
-export async function open(e: Event, openedFile: Slackt) {
+export async function open(e: Event) {
     if (e.target instanceof HTMLInputElement) {
         const file = e.target.files?.item(0);
         const text = await file?.text();
         if (!file || !text) {
-            console.error('äawh');
-            return null;
+            throw new Error('äawh');
         }
+        let openedFile: Tree | null = null;
         try {
-            openedFile = Slackt.fromString(text);
+            openedFile = Tree.fromString(text);
         } catch (error) {
-            console.error('Fel på filen', error);
+            throw new Error('Fel på filen: ' + error);
         }
 
         if (openedFile) {
-            localStorage.setItem('openedFile', openedFile.stringify());
             return openedFile;
         }
     }
+    throw new Error('fel');
 }
 
-export function clear() {
-    let newFile = new Slackt();
-    localStorage.setItem('openedFile', newFile.stringify());
-    return newFile;
+export function uuidFromString(str: UUID | null) {
+    if (str === null || str === '' || str === 'null') return null;
+
+    return str;
 }

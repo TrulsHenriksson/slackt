@@ -5,17 +5,13 @@
     box-sizing: border-box;
 }
 
-html {
+html,
+body,
+#app {
     height: 100svh;
 }
 
-body {
-    height: 100svh;
-    display: flex;
-    flex-direction: column;
-}
-
-main {
+#app {
     display: flex;
     flex-direction: column;
 }
@@ -34,11 +30,15 @@ header {
     align-items: baseline;
 }
 
+#userInfo {
+    font-family: monospace;
+}
+
 #menuButtons {
     border-bottom: 2px #084 solid;
 }
 
-body>main#editor {
+main#editor {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     flex: 1;
@@ -80,7 +80,7 @@ main>* {
     column-gap: 0.5rem;
 }
 
-.embolden {
+.selected {
     font-weight: bolder;
 }
 
@@ -119,13 +119,12 @@ button:hover {
     transform: none;
 }
 
-form.person {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.2rem;
+.textButton:disabled {
+    background-color: #999;
+    cursor: default;
 }
 
-form.family {
+#inspector form {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 0.2rem;
@@ -151,6 +150,10 @@ form.family {
 
 .grow {
     flex-grow: 1;
+}
+
+.span {
+    grid-column-end: span 2;
 }
 
 .infoBox {
@@ -196,18 +199,25 @@ form.family {
 .arrows {
     display: flex;
     flex-direction: column;
+    justify-content: center;
+}
+
+.arrows button {
+    font-size: 0.6rem;
+    padding: 0.05rem;
+}
+
+.arrows button:first-child:last-child {
+    border-radius: 0.3rem;
+    padding: 0.05rem;
 }
 
 .arrows button:first-child {
-    font-size: 0.7rem;
-    padding: 0.05rem;
-    padding-bottom: 0;
     border-radius: 0.3rem 0.3rem 0 0;
+    padding-bottom: 0;
 }
 
 .arrows button:last-child {
-    font-size: 0.7rem;
-    padding: 0.05rem;
-    padding-top: 0;
     border-radius: 0 0 0.3rem 0.3rem;
+    padding-top: 0;
 }

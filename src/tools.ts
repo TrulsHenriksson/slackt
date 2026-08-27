@@ -1,11 +1,11 @@
 import {
-    Slackt,
+    Tree,
     open,
     download,
-    clear,
     FindDirectRelatives,
     Person,
 } from './typesnmethods.js';
+import { supabase } from './supabase.js';
 
 function refresh() {
     personSelectEl.innerHTML =
@@ -26,6 +26,8 @@ const saveButton = document.getElementById('save')!;
 const clearButton = document.getElementById('clear')!;
 const listNetworkButton = document.getElementById('listNetwork')!;
 //const listFamilyButton = document.getElementById('listFamily')!;
+const databaseButton = document.getElementById('database')!;
+const commentField = document.getElementById('comment') as HTMLInputElement;
 const personSelectEl = document.getElementById(
     'selectPerson',
 ) as HTMLSelectElement;
@@ -37,21 +39,13 @@ const mainArea = document.getElementById('viewer')!;
     clearButton,
     listNetworkButton,
     //listFamilyButton,
+    databaseButton,
+    commentField,
     personSelectEl,
     mainArea,
 ].forEach((element) => {
     if (!element) throw new Error();
 });
-
-openButton.addEventListener('change', async (e) => {
-    openedFile = (await open(e, openedFile)) || openedFile;
-    refresh();
-});
-saveButton.onclick = () => download(openedFile);
-clearButton.onclick = () => {
-    openedFile = clear();
-    refresh();
-};
 
 listNetworkButton.onclick = () => {
     let networksSet: Set<number>[] = [];
@@ -138,10 +132,22 @@ personSelectEl.onchange = (e) => {
     refresh();
 };
 
-let openedFile = new Slackt();
+databaseButton.onclick = async () => {
+    let data = await supabase
+        .from('Trees')
+        .insert({
+            data: openedFile.stringify(),
+            comment: commentField.value,
+            by_user: (await supabase.auth.getSession()).data.session?.user.id,
+        })
+        .select();
+    console.log(data);
+};
+
+let openedFile = new Tree();
 let fromLS = localStorage.getItem('openedFile');
 if (fromLS) {
-    openedFile = Slackt.fromString(fromLS);
+    openedFile = Tree.fromString(fromLS);
 }
 
 let selectedPerson: number | null = null;

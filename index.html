@@ -3,69 +3,12 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="./src/style.css" />
-        <script type="module" src="./dist/index.js"></script>
         <title>Slackt - Fyrgeit.se</title>
     </head>
     <body>
-        <header>
-            <h1>Slackt</h1>
-            <h2>Redigerare</h2>
-            <h2><a href="viewer.html">Utforskare</a></h2>
-            <h2><a href="tools.html">Verktyg</a></h2>
-            <p>Tillbaka till <a href="https://fyrgeit.se">Fyrgeit.se</a></p>
-        </header>
-
-        <div id="menuButtons">
-            <button
-                class="textButton"
-                onclick="document.getElementById('open').click()"
-            >
-                Öppna
-            </button>
-            <input type="file" id="open" accept=".json" style="display: none" />
-            <button class="textButton" id="save">Spara</button>
-            <button class="textButton" id="clear">Rensa</button>
-        </div>
-        <main id="editor">
-            <div id="people">
-                <h1>Personer</h1>
-                <div class="hcont">
-                    <label for="searchPeople">Sök:</label>
-                    <input type="text" id="searchPeople" />
-                    <button class="textbutton" id="clearSearchPeople">
-                        ❌
-                    </button>
-                </div>
-                <div class="list"></div>
-                <button class="textButton" id="addPerson">
-                    Lägg till person
-                </button>
-            </div>
-            <div id="families">
-                <h1>Familjer</h1>
-                <div class="hcont">
-                    <label for="searchFamilies">Sök:</label>
-                    <input type="text" id="searchFamilies" />
-                    <button class="textbutton" id="clearSearchFamilies">
-                        ❌
-                    </button>
-                </div>
-                <div class="list"></div>
-                <button class="textButton" id="addFamily">
-                    Lägg till familj
-                </button>
-            </div>
-            <div id="inspector">
-                <div>
-                    <h2>Person</h2>
-                    <div id="person"></div>
-                </div>
-                <div>
-                    <h2>Familj</h2>
-                    <div id="family"></div>
-                </div>
-            </div>
-        </main>
+        <body>
+            <div id="app"></div>
+            <script type="module" src="/src/main.ts"></script>
+        </body>
     </body>
 </html>
