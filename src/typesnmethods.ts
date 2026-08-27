@@ -75,7 +75,7 @@ export class Person {
         // Take names from other unless they're empty
         if (other.nameFirst !== "")
             this.nameFirst = other.nameFirst
-        if (other.nameLast !== "") 
+        if (other.nameLast !== "")
             this.nameLast = other.nameLast
         if (other.nameLastMaiden !== "")
             this.nameLastMaiden = other.nameLastMaiden
@@ -134,8 +134,8 @@ export class Family {
         this.dateStart = dateStart
     }
 
-    /** Format the family string using the given Slackt file. 
-     * 
+    /** Format the family string using the given Slackt file.
+     *
      *  `type="full"` adds the last name, and `type="extra"` adds the family id.
     */
     formatFamily(s: Slackt, type: "short" | "full" | "extra" = "extra") {
@@ -270,7 +270,7 @@ export class Slackt {
                 throw new Error(`Family ${familyId} already had a husband.`)
             family.husband = personId
             map_append(this.familyMap, family.husband, familyId)
-        } else {   
+        } else {
             if (family.wife !== null)
                 throw new Error(`Family ${familyId} already had a wife.`)
             family.wife = personId
@@ -308,6 +308,28 @@ export class Slackt {
         return [
             fatherId === null ? undefined : this.getPerson(fatherId),
             motherId === null ? undefined : this.getPerson(motherId),
+        ]
+    }
+
+    /** Return siblings and half-siblings as two lists. */
+    getSiblings(personId: PersonId): [Person[], Person[]] {
+        let siblings: Set<PersonId> = new Set()
+        let halfSiblings: Set<PersonId> = new Set()
+        for (const parent of this.getParentsFromChild(personId)) {
+            if (parent === undefined)
+                continue
+            const families = this.getFamiliesFromParent(parent.id)
+            for (const family of families) {
+                let siblingSet = family.children.includes(personId) ? siblings : halfSiblings
+                family.children.forEach(childId => {
+                    if (childId !== personId)
+                        siblingSet.add(childId)
+                });
+            }
+        }
+        return [
+            [...siblings].map(id => this.getPerson(id)),
+            [...halfSiblings].map(id => this.getPerson(id)),
         ]
     }
 

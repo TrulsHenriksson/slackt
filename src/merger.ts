@@ -189,13 +189,14 @@ function updateCandidateInfo(e: PointerEvent, file: Slackt) {
     const personId = Number(candidateContainer.getAttribute("data-personId")) as PersonId
     const person = file.getPerson(personId)
     const parents = file.getParentsFromChild(personId)
+    const [siblings, halfSiblings] = file.getSiblings(personId)
     const families = file.getFamiliesFromParent(personId)
     // Update the <p> elements in the popover div (#candidateInfoBox)
     document.getElementById("firstNameInfo")!.innerText = (
         `Förnamn: ${person.nameFirst}`
     )
     document.getElementById("lastNamesInfo")!.innerText = (
-        `Efternamn: ${person.nameLast}` + (person.nameLastMaiden !== "" ? ` (f. ${person.nameLastMaiden})` : "")
+        `Efternamn: ${person.nameLast || "?"}` + (person.nameLastMaiden !== "" ? ` (f. ${person.nameLastMaiden})` : "")
     )
     const dateInfo = document.getElementById("dateInfo")!;
     dateInfo.parentElement!.setAttribute("display", person.dateBirth !== "" || person.dateDeath !== "" ? "inline" : "none")
@@ -204,7 +205,10 @@ function updateCandidateInfo(e: PointerEvent, file: Slackt) {
         + (person.dateDeath === "" ? "" : ` Död: ${person.dateDeath}`)
     )
     document.getElementById("parentsInfo")!.innerText = (
-        "Föräldrar: " + parents.map(p => p === undefined ? "?" : p.formatName("full")).join(", ")
+        "Föräldrar: " + parents.map(p => p === undefined ? "?" : p.formatName("short")).join(", ")
+    )
+    document.getElementById("siblingsInfo")!.innerText = (
+        "Syskon: " + siblings.map(p => p.formatName("short")).join(", ")
     )
     document.getElementById("familyInfo")!.innerText = (
         "Egen familj: " + families.map(f => f.formatFamily(file, "short")).join("; ")

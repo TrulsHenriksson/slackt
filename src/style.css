@@ -275,21 +275,29 @@ div.candidateContainer {
     display: inline-flex;
     margin-right: 4px;
     border-radius: 0.5rem;
+    background-color: hsl(120, 20%, 45%);
+}
+
+div.candidateContainer.selected {
+    background-color: #0c0;
+}
+
+div.candidateContainer > button {
+    transform: none;
+    background-color: inherit;
+}
+
+div.candidateContainer > button:hover {
+    background-color: #8f8;
 }
 
 div.candidateContainer > button.candidateButton {
     padding: 2px;
-    transform: none;
     border-radius: 0.4rem 0 0 0.4rem;
 }
 
-button.infoButton {
-    transform: none;
+div.candidateContainer > button.infoButton {
     border-radius: 0 0.4rem 0.4rem 0;
-}
-
-div.selected {
-    border: 2px solid black;
 }
 
 #candidateInfoBox {
