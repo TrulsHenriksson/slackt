@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Tree, download as downloadFile, open, tryClear } from './typesnmethods';
+import { Tree, download as downloadFile, open } from './typesnmethods';
 import { ref } from 'vue';
 import { supabase } from './supabase';
 import { Session } from '@supabase/supabase-js';
@@ -18,9 +18,8 @@ async function openFile(e: Event) {
 }
 
 function clear() {
-    const newFile = tryClear()
-    if (newFile !== undefined)
-        workingTree.value = newFile
+    if (window.confirm("Vill du verkligen ta bort alla personer och familjer?"))
+        workingTree.value = new Tree()
 }
 
 async function upload() {

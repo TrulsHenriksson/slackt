@@ -267,9 +267,3 @@ export function uuidFromString(str: string | null): UUID | null {
 
     return str as UUID;
 }
-
-/** Return a blank file if the user confirms the dialog. */
-export function tryClear(): Tree | undefined {
-    if (window.confirm("Vill du verkligen ta bort alla personer och familjer?"))
-        return new Tree()
-}

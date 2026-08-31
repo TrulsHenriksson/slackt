@@ -1,4 +1,4 @@
-import { UUID, Tree, open, download, tryClear, Person } from './typesnmethods.js';
+import { UUID, Tree, open, download, Person } from './typesnmethods.js';
 
 function refresh() {
     familySelectEl.innerHTML =
@@ -132,11 +132,7 @@ openButton.addEventListener('change', async (e) => {
 });
 saveButton.onclick = () => download(openedFile);
 clearButton.onclick = () => {
-    const newFile = tryClear();
-    if (newFile === undefined)
-        return
-    openedFile = newFile;
-    refresh();
+    console.error("Clearing is not supported here")
 };
 
 const familySelectEl = document.getElementById(
