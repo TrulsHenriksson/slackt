@@ -1,5 +1,5 @@
 import {
-    UUID,
+    PersonId,
     Tree,
     open,
     download,
@@ -49,12 +49,12 @@ const mainArea = document.getElementById('viewer')!;
 });
 
 listNetworkButton.onclick = () => {
-    let networksSet: Set<UUID>[] = [];
+    let networksSet: Set<PersonId>[] = [];
     for (let i = 0; i < openedFile.people.length; i++) {
         if (networksSet.some((n) => n.has(openedFile.people[i].id))) continue;
 
         let p = openedFile.people[i];
-        let network = analysePerson(p, new Set<UUID>());
+        let network = analysePerson(p, new Set<PersonId>());
         networksSet.push(network);
     }
 
@@ -115,7 +115,7 @@ listNetworkButton.onclick = () => {
     }
 };
 
-function analysePerson(p: Person, counted: Set<UUID>) {
+function analysePerson(p: Person, counted: Set<PersonId>) {
     counted.add(p.id);
     FindDirectRelatives(openedFile, p.id)
         .filter((p) => !counted.has(p))

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue';
-import { Tree, UUID } from '../typesnmethods.ts';
+import { Tree, PersonId, FamilyId } from '../typesnmethods.ts';
 
 const workingTree = defineModel<Tree>('workingTree', {
     required: true,
 });
 
-const selectedPersonId = defineModel<UUID | null>('selectedPersonId', {
+const selectedPersonId = defineModel<PersonId | null>('selectedPersonId', {
     required: true,
 });
 
-const selectedFamilyId = defineModel<UUID | null>('selectedFamilyId', {
+const selectedFamilyId = defineModel<FamilyId | null>('selectedFamilyId', {
     required: true,
 });
 
@@ -57,7 +57,7 @@ const selectedFamilyMembers = computed(() => {
     };
 });
 
-async function scrollToPerson(id: UUID | null) {
+async function scrollToPerson(id: PersonId | null) {
     if (id === null) return;
 
     await nextTick();
@@ -68,7 +68,7 @@ async function scrollToPerson(id: UUID | null) {
     });
 }
 
-async function scrollToFamily(id: UUID | null) {
+async function scrollToFamily(id: FamilyId | null) {
     if (id === null) return;
 
     await nextTick();
@@ -97,7 +97,7 @@ async function addFamily() {
     scrollToFamily(newId);
 }
 
-function deletePerson(personId: UUID) {
+function deletePerson(personId: PersonId) {
     const i = workingTree.value.people.findIndex((f) => f.id === personId);
 
     workingTree.value.people.splice(i, 1);
@@ -113,7 +113,7 @@ function deletePerson(personId: UUID) {
     });
 }
 
-function deleteFamily(familyId: UUID) {
+function deleteFamily(familyId: FamilyId) {
     const i = workingTree.value.families.findIndex((f) => f.id === familyId);
 
     workingTree.value.families.splice(i, 1);
@@ -121,7 +121,7 @@ function deleteFamily(familyId: UUID) {
     selectedFamilyId.value = workingTree.value.families[i - 1]?.id ?? null;
 }
 
-function moveChild(id: UUID, step: number) {
+function moveChild(id: PersonId, step: number) {
     if (selectedFamily.value === null) return;
 
     let children = selectedFamily.value.children;

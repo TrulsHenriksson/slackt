@@ -1,4 +1,4 @@
-import { UUID, Tree, open, download, Person } from './typesnmethods.js';
+import { FamilyId, Tree, open, download, Person } from './typesnmethods.js';
 
 function refresh() {
     familySelectEl.innerHTML =
@@ -141,7 +141,7 @@ const familySelectEl = document.getElementById(
 
 familySelectEl.onchange = (e) => {
     let target = e.target as HTMLSelectElement;
-    selectedFamily = target.value as UUID;
+    selectedFamily = target.value as FamilyId;
     localStorage.setItem('selectedFamily', target.value);
     refresh();
 };
@@ -154,9 +154,9 @@ if (fromLS) {
     openedFile = Tree.fromString(fromLS);
 }
 
-let selectedFamily: UUID | null = null;
+let selectedFamily: FamilyId | null = null;
 let sf = localStorage.getItem('selectedFamily');
 if (sf !== null && sf !== 'null') 
-    selectedFamily = sf as UUID;
+    selectedFamily = sf as FamilyId;
 
 refresh();

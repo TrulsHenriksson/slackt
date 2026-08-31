@@ -2,11 +2,12 @@
 // https://stackoverflow.com/a/50521248
 type Opaque<T, K> = T & { __opaque__: K }
 
-export type UUID = Opaque<string, "UUID">;
+export type PersonId = Opaque<string, "PersonId">;
+export type FamilyId = Opaque<string, "FamilyId">;
 
 
 interface IPerson {
-    id: UUID;
+    id: PersonId;
     nameFirst: string;
     nameLast: string;
     nameLastMaiden: string;
@@ -14,16 +15,16 @@ interface IPerson {
     dateDeath: string;
 }
 interface IFamily {
-    id: UUID;
-    husband: UUID | null;
-    wife: UUID | null;
-    children: UUID[];
+    id: FamilyId;
+    husband: PersonId | null;
+    wife: PersonId | null;
+    children: PersonId[];
     nameLastOverride: string;
     dateStart: string;
 }
 
 export class Person {
-    id: UUID;
+    readonly id: PersonId;
     nameFirst: string;
     nameLast: string;
     nameLastMaiden: string;
@@ -31,7 +32,7 @@ export class Person {
     dateDeath: string;
 
     constructor(
-        id: UUID,
+        id: PersonId,
         nameFirst: string = '',
         nameLast: string = '',
         nameLastMaiden: string = '',
@@ -70,18 +71,18 @@ export class Person {
 }
 
 export class Family {
-    id: UUID;
-    husband: UUID | null;
-    wife: UUID | null;
-    children: UUID[];
+    readonly id: FamilyId;
+    husband: PersonId | null;
+    wife: PersonId | null;
+    children: PersonId[];
     nameLastOverride: string;
     dateStart: string;
 
     constructor(
-        id: UUID,
-        husband: UUID | null = null,
-        wife: UUID | null = null,
-        children: UUID[] = [],
+        id: FamilyId,
+        husband: PersonId | null = null,
+        wife: PersonId | null = null,
+        children: PersonId[] = [],
         nameLastOverride: string = '',
         dateStart: string = '',
     ) {
@@ -124,14 +125,14 @@ export class Tree {
         this.families = families;
     }
 
-    addEmptyPerson(): UUID {
-        let newId: UUID = crypto.randomUUID() as UUID;
+    addEmptyPerson(): PersonId {
+        let newId: PersonId = crypto.randomUUID() as PersonId;
         this.people.push(new Person(newId));
         return newId;
     }
 
-    addEmptyFamily(): UUID {
-        const newId: UUID = crypto.randomUUID() as UUID;
+    addEmptyFamily(): FamilyId {
+        const newId: FamilyId = crypto.randomUUID() as FamilyId;
 
         this.families.push(new Family(newId));
 
@@ -139,32 +140,32 @@ export class Tree {
     }
 
     /** Return the person with the given id, or undefined. */
-    findPerson(id: UUID | null): Person | undefined {
+    findPerson(id: PersonId | null): Person | undefined {
         return this.people.find((p) => p.id === id);
     }
 
     /** Get a person, and throw an error if it does not exist. */
-    getPerson(id: UUID): Person {
+    getPerson(id: PersonId): Person {
         let p = this.findPerson(id);
         if (p === undefined) throw new Error(`Person ${id} does not exist`);
         return p;
     }
 
     /** Return the family with the given id, or undefined. */
-    findFamily(id: UUID | null): Family | undefined {
+    findFamily(id: FamilyId | null): Family | undefined {
         return this.families.find((f) => f.id === id);
     }
 
     /** Get a family, and throw an error if it does not exist. */
-    getFamily(id: UUID): Family {
+    getFamily(id: FamilyId): Family {
         let p = this.findFamily(id);
         if (p === undefined) throw new Error(`Family ${id} does not exist`);
         return p;
     }
 
     addPersonToFamily(
-        familyId: UUID,
-        personId: UUID | null,
+        familyId: FamilyId,
+        personId: PersonId | null,
         role: 'husband' | 'wife' | 'child',
     ) {
         let family = this.getFamily(familyId);
@@ -204,7 +205,7 @@ export class Tree {
     }
 }
 
-export function FindDirectRelatives(s: Tree, personId: UUID) {
+export function FindDirectRelatives(s: Tree, personId: PersonId) {
     let families = s.families.filter(
         (f) =>
             f.husband === personId ||
@@ -262,8 +263,14 @@ export async function open(e: Event) {
     throw new Error('fel');
 }
 
-export function uuidFromString(str: string | null): UUID | null {
-    if (str === null || str === '' || str === 'null') return null;
+export function personIdFromString(str: string | null): PersonId | null {
+    if (str === null || str === '' || str === 'null') 
+        return null;
+    return str as PersonId;
+}
 
-    return str as UUID;
+export function familyIdFromString(str: string | null): FamilyId | null {
+    if (str === null || str === '' || str === 'null') 
+        return null;
+    return str as FamilyId;
 }
