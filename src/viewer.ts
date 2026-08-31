@@ -1,4 +1,4 @@
-import { Tree, open, download, clear, Person } from './typesnmethods.js';
+import { UUID, Tree, open, download, tryClear, Person } from './typesnmethods.js';
 
 function refresh() {
     familySelectEl.innerHTML =
@@ -127,12 +127,15 @@ const saveButton = document.getElementById('save')!;
 const clearButton = document.getElementById('clear')!;
 
 openButton.addEventListener('change', async (e) => {
-    openedFile = (await open(e, openedFile)) || openedFile;
+    openedFile = (await open(e)) || openedFile;
     refresh();
 });
 saveButton.onclick = () => download(openedFile);
 clearButton.onclick = () => {
-    openedFile = clear();
+    const newFile = tryClear();
+    if (newFile === undefined)
+        return
+    openedFile = newFile;
     refresh();
 };
 
@@ -142,7 +145,7 @@ const familySelectEl = document.getElementById(
 
 familySelectEl.onchange = (e) => {
     let target = e.target as HTMLSelectElement;
-    selectedFamily = parseInt(target.value);
+    selectedFamily = target.value as UUID;
     localStorage.setItem('selectedFamily', target.value);
     refresh();
 };
@@ -155,8 +158,9 @@ if (fromLS) {
     openedFile = Tree.fromString(fromLS);
 }
 
-let selectedFamily: number | null = null;
+let selectedFamily: UUID | null = null;
 let sf = localStorage.getItem('selectedFamily');
-if (sf !== null && sf !== 'null') selectedFamily = parseInt(sf);
+if (sf !== null && sf !== 'null') 
+    selectedFamily = sf as UUID;
 
 refresh();

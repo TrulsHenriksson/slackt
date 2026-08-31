@@ -1,4 +1,5 @@
 import {
+    UUID,
     Tree,
     open,
     download,
@@ -48,12 +49,12 @@ const mainArea = document.getElementById('viewer')!;
 });
 
 listNetworkButton.onclick = () => {
-    let networksSet: Set<number>[] = [];
+    let networksSet: Set<UUID>[] = [];
     for (let i = 0; i < openedFile.people.length; i++) {
         if (networksSet.some((n) => n.has(openedFile.people[i].id))) continue;
 
         let p = openedFile.people[i];
-        let network = analysePerson(p, new Set<number>());
+        let network = analysePerson(p, new Set<UUID>());
         networksSet.push(network);
     }
 
@@ -114,7 +115,7 @@ listNetworkButton.onclick = () => {
     }
 };
 
-function analysePerson(p: Person, counted: Set<number>) {
+function analysePerson(p: Person, counted: Set<UUID>) {
     counted.add(p.id);
     FindDirectRelatives(openedFile, p.id)
         .filter((p) => !counted.has(p))
@@ -134,7 +135,7 @@ personSelectEl.onchange = (e) => {
 
 databaseButton.onclick = async () => {
     let data = await supabase
-        .from('Trees')
+        .from('trees')
         .insert({
             data: openedFile.stringify(),
             comment: commentField.value,

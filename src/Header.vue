@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Tree, download as downloadFile, open } from './typesnmethods';
+import { Tree, download as downloadFile, open, tryClear } from './typesnmethods';
 import { ref } from 'vue';
 import { supabase } from './supabase';
 import { Session } from '@supabase/supabase-js';
@@ -17,17 +17,10 @@ async function openFile(e: Event) {
     workingTree.value = await open(e);
 }
 
-let timeStampLastClickedClear = 0;
 function clear() {
-    // Click twice within 2 seconds to clear
-    if (Date.now() - timeStampLastClickedClear < 2000) {
-        workingTree.value = new Tree();
-    } else {
-        alert(
-            'Vill du verkligen ta bort alla personer och familjer? Klicka igen inom 2 sekunder i så fall.',
-        );
-    }
-    timeStampLastClickedClear = Date.now();
+    const newFile = tryClear()
+    if (newFile !== undefined)
+        workingTree.value = newFile
 }
 
 async function upload() {

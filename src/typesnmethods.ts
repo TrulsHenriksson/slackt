@@ -1,4 +1,9 @@
-export type UUID = string;
+// Helper for creating ID types that can't be mixed up with regular numbers
+// https://stackoverflow.com/a/50521248
+type Opaque<T, K> = T & { __opaque__: K }
+
+export type UUID = Opaque<string, "UUID">;
+
 
 interface IPerson {
     id: UUID;
@@ -120,13 +125,13 @@ export class Tree {
     }
 
     addEmptyPerson(): UUID {
-        let newId: UUID = crypto.randomUUID();
+        let newId: UUID = crypto.randomUUID() as UUID;
         this.people.push(new Person(newId));
         return newId;
     }
 
     addEmptyFamily(): UUID {
-        const newId: UUID = crypto.randomUUID();
+        const newId: UUID = crypto.randomUUID() as UUID;
 
         this.families.push(new Family(newId));
 
@@ -257,8 +262,14 @@ export async function open(e: Event) {
     throw new Error('fel');
 }
 
-export function uuidFromString(str: UUID | null) {
+export function uuidFromString(str: string | null): UUID | null {
     if (str === null || str === '' || str === 'null') return null;
 
-    return str;
+    return str as UUID;
+}
+
+/** Return a blank file if the user confirms the dialog. */
+export function tryClear(): Tree | undefined {
+    if (window.confirm("Vill du verkligen ta bort alla personer och familjer?"))
+        return new Tree()
 }
